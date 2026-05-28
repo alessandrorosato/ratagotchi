@@ -1,8 +1,8 @@
-use std::io;
+use std::{io, sync::mpsc, thread, time::Duration};
 
 use ratatui::{
     DefaultTerminal, Frame,
-    crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+    crossterm::{self, event::{Event, KeyCode, KeyEvent}},
 };
 
 use crate::ui::GameView;
@@ -12,6 +12,7 @@ pub struct Game {
     exit: bool,
     pub active_view: GameView,
     pub highlighted_tab: GameView,
+    pub tick_progress: usize,
 }
 
 pub enum GameState {
@@ -21,26 +22,19 @@ pub enum GameState {
 }
 
 impl Game {
-    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+    pub fn run(&mut self, terminal: &mut DefaultTerminal, rx: mpsc::Receiver<Trigger>) -> io::Result<()> {
         while !self.exit {
+            match rx.recv().unwrap() {
+                Trigger::Input(key_event) => self.handle_key_event(key_event),
+                Trigger::Tick => self.tick_progress += 1,
+            }
             terminal.draw(|frame| self.draw(frame))?;
-            self.handle_events()?;
         }
         Ok(())
     }
 
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
-    }
-
-    fn handle_events(&mut self) -> io::Result<()> {
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event)
-            }
-            _ => {}
-        };
-        Ok(())
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
@@ -87,5 +81,25 @@ impl Game {
 
     fn exit(&mut self) {
         self.exit = true;
+    }
+}
+
+pub enum Trigger {
+    Input(KeyEvent),
+    Tick
+}
+
+pub fn handle_input_events(tx: mpsc::Sender<Trigger>) {
+    loop {
+        if let Event::Key(key_event) = crossterm::event::read().unwrap() {
+            tx.send(Trigger::Input(key_event)).unwrap()
+        }
+    }
+}
+
+pub fn tick_lapse(tx: mpsc::Sender<Trigger>) {
+    loop {
+        thread::sleep(Duration::from_millis(500));
+        tx.send(Trigger::Tick).unwrap();
     }
 }
