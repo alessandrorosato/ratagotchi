@@ -107,6 +107,7 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
 
 impl Widget for &Game {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        // TODO: Here we likely want to differentiate between the Catching-Up and the Running states
         render_view(self, area, buf)
     }
 }
@@ -122,7 +123,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
 
     let block = Block::bordered()
         .title(title.centered())
-        .title_bottom(get_instructions())
+        .title_bottom(get_instructions(&game))
         .border_set(border::THICK);
     
 
@@ -135,8 +136,6 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     navigation_row(game, top, buf, true);
     navigation_row(game, bottom, buf, false);
 
-    // Paragraph::new(format!("{:#?}", game))
-    //     .render(main, buf);
     self::render_image_as_paragraph("assets/ratagotchi-idle.gif".to_string(), Some(game.tick_progress % 2), main)
         .centered()
         .render(main, buf);
@@ -158,7 +157,7 @@ fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> 
                 Ok(r) => r,
                 Err(_) => panic!("Can't find asset: {}", path.to_lowercase()),
             };
-            
+
             image_reader.decode().unwrap().into_rgba8()
         },
     };
@@ -218,7 +217,7 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
     lines
 }
 
-fn get_instructions() -> Line<'static>{
-    Line::from(" <Tab> for menu navigation, <Enter> to trigger selected item ")
+fn get_instructions(game: &Game) -> Line<'static>{
+    Line::from(format!(" <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, health: {:.3?} ", game.tick_progress, game.ratagotchi.health))
                 .alignment(Alignment::Center)
 }
