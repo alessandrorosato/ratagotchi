@@ -13,8 +13,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{
-        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
-        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
+        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
+        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
+        RATAGOTCHI_DECAY_FACTOR_HUNGER,
     },
     ui::GameView,
 };
@@ -67,6 +68,9 @@ impl Game {
                             self.tick_decay(1.0);
                             self.tick_increase();
                         }
+                    }
+                    if self.tick_progress.is_multiple_of(GAME_AUTOSAVE_FREQUENCY) {
+                        self.save();
                     }
                     terminal.draw(|frame| self.draw(frame))?;
                 }
