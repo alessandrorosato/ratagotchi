@@ -1,5 +1,6 @@
 use std::{io, path::PathBuf, sync::mpsc, thread, time::Duration};
 
+use chrono::{DateTime, Utc};
 use directories::ProjectDirs;
 use ratatui::{
     DefaultTerminal, Frame,
@@ -10,7 +11,13 @@ use ratatui::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::ui::GameView;
+use crate::{
+    config::{
+        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
+        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
+    },
+    ui::GameView,
+};
 
 #[derive(Debug, Default)]
 pub struct Game {
@@ -29,6 +36,7 @@ pub struct Ratagotchi {
     pub happiness: f32,
     pub discipline: f32,
     pub weight: f32,
+    pub last_update: DateTime<Utc>,
 }
 
 #[derive(Debug, Default)]
@@ -49,14 +57,14 @@ impl Game {
             match self.state {
                 GameState::CatchingUp => {
                     self.load();
-                    // TODO: Do the actual catch-up, which means adding last tick's datetime and doing some calculations.
+                    self.catchup();
                     self.next_state(GameState::Running);
                 }
                 GameState::Running => {
                     match rx.recv().unwrap() {
                         Trigger::Input(key_event) => self.handle_key_event(key_event),
                         Trigger::Tick => {
-                            self.tick_decay();
+                            self.tick_decay(1.0);
                             self.tick_increase();
                         }
                     }
@@ -122,11 +130,13 @@ impl Game {
     }
 
     // TODO: I just threw random factors here, it probably needs a second look
-    pub fn tick_decay(&mut self) {
-        self.ratagotchi.hunger -= 0.004;
-        self.ratagotchi.health -= 0.001;
-        self.ratagotchi.happiness -= 0.002 * (100. / self.ratagotchi.hunger);
-        self.ratagotchi.discipline -= 0.004 * (100. / self.ratagotchi.happiness);
+    pub fn tick_decay(&mut self, ticks: f32) {
+        self.ratagotchi.hunger -= RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks;
+        self.ratagotchi.health -= RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks;
+        self.ratagotchi.happiness -=
+            RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks;
+        self.ratagotchi.discipline -=
+            RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks;
     }
 
     fn next_state(&mut self, state: GameState) {
@@ -153,9 +163,10 @@ impl Game {
         }
     }
 
-    fn save(&self) {
+    fn save(&mut self) {
         match self.get_storage_folder() {
             Ok(f) => {
+                self.ratagotchi.last_update = Utc::now();
                 let full_path = f.join("savegame.json");
                 let data = serde_json::to_vec(&self.ratagotchi).unwrap();
                 let _ = std::fs::write(full_path, data).inspect_err(|e| {
@@ -182,6 +193,12 @@ impl Game {
                 log::error!("Error while getting storage folder: {}", e);
             }
         }
+    }
+
+    fn catchup(&mut self) {
+        let time_delta = (Utc::now() - self.ratagotchi.last_update).as_seconds_f32();
+        let ticks_delta = time_delta * 2.0;
+        self.tick_decay(ticks_delta);
     }
 }
 
@@ -213,6 +230,7 @@ impl Default for Ratagotchi {
             happiness: 100.,
             discipline: 100.,
             weight: 1.,
+            last_update: Utc::now(),
         }
     }
 }
