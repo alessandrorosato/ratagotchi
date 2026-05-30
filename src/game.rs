@@ -1,9 +1,11 @@
-use std::{io, sync::mpsc, thread, time::Duration};
+use std::{io, path::PathBuf, sync::mpsc, thread, time::Duration};
 
+use directories::ProjectDirs;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::{self, event::{Event, KeyCode, KeyEvent}},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::ui::GameView;
 
@@ -17,7 +19,7 @@ pub struct Game {
     pub ratagotchi: Ratagotchi
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Ratagotchi {
     pub hunger: f32,
     pub health: f32,
@@ -39,7 +41,8 @@ impl Game {
         while !self.exit {
             match self.state {
                 GameState::CatchingUp => {
-                    // TODO: Here we supposedly load the savegame and simulate the time diff
+                    self.load();
+                    // TODO: Do the actual catch-up, which means adding last tick's datetime and doing some calculations.
                     self.next_state(GameState::Running);
                 }
                 GameState::Running => {
@@ -53,7 +56,7 @@ impl Game {
                     terminal.draw(|frame| self.draw(frame))?;
                 },
                 GameState::Exiting => {
-                    // TODO: Save game state before exiting
+                    self.save();
                     self.exit();
                 }
             }
@@ -125,6 +128,54 @@ impl Game {
 
     fn exit(&mut self) {
         self.exit = true;
+    }
+
+    // Get application's data folder for savegames
+    // Linux:   /home/alice/.config/ratagotchi
+    // Windows: C:\Users\Alice\AppData\Roaming\shelakynn\ratagotchi
+    // macOS:   /Users/Alice/Library/Application Support/shelakynn.ratagotchi
+    fn get_storage_folder(&self) -> Result<PathBuf, Box<dyn std::error::Error>>  {
+        if let Some(proj_dirs) = ProjectDirs::from("", "shelakynn",  "ratagotchi") {
+            let storage_folder = proj_dirs.data_dir();
+            if !storage_folder.to_path_buf().exists() {
+                std::fs::create_dir_all(storage_folder).unwrap();
+            }
+            Ok(storage_folder.to_path_buf())
+        } else {
+            Err("Failed to get directories".to_string())?
+        }
+    }
+
+    fn save(&self) {
+        match self.get_storage_folder() {
+            Ok(f) => {
+                let full_path = f.join("savegame.json");
+                let data = serde_json::to_vec(&self.ratagotchi).unwrap();
+                let _ = std::fs::write(full_path, data).inspect_err(|e| {
+                    log::error!("Error while writing save file: {}", e);
+                });
+            },
+            Err(e) => {
+                log::error!("Error while getting storage folder: {}", e);
+            }
+        }
+    }
+    fn load(&mut self) {
+        match self.get_storage_folder() {
+            Ok(f) => {
+                let full_path = f.join("savegame.json");
+                if let Ok(json_data) = std::fs::read(full_path) {
+                    match serde_json::from_slice::<Ratagotchi>(&json_data) {
+                        Ok(r) => self.ratagotchi = r,
+                        Err(e) => log::error!("Error while reading save file: {}", e),
+                    };
+                    
+                }
+            },
+            Err(e) => {
+                log::error!("Error while getting storage folder: {}", e);
+            }
+        }
     }
 }
 

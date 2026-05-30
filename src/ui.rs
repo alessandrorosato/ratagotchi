@@ -123,7 +123,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
 
     let block = Block::bordered()
         .title(title.centered())
-        .title_bottom(get_instructions(&game))
+        .title_bottom(get_instructions(game))
         .border_set(border::THICK);
     
 
