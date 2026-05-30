@@ -3,7 +3,10 @@ use std::{io, path::PathBuf, sync::mpsc, thread, time::Duration};
 use directories::ProjectDirs;
 use ratatui::{
     DefaultTerminal, Frame,
-    crossterm::{self, event::{Event, KeyCode, KeyEvent}},
+    crossterm::{
+        self,
+        event::{Event, KeyCode, KeyEvent},
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +19,7 @@ pub struct Game {
     pub active_view: GameView,
     pub highlighted_tab: GameView,
     pub tick_progress: usize,
-    pub ratagotchi: Ratagotchi
+    pub ratagotchi: Ratagotchi,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,7 +40,11 @@ pub enum GameState {
 }
 
 impl Game {
-    pub fn run(&mut self, terminal: &mut DefaultTerminal, rx: mpsc::Receiver<Trigger>) -> io::Result<()> {
+    pub fn run(
+        &mut self,
+        terminal: &mut DefaultTerminal,
+        rx: mpsc::Receiver<Trigger>,
+    ) -> io::Result<()> {
         while !self.exit {
             match self.state {
                 GameState::CatchingUp => {
@@ -51,10 +58,10 @@ impl Game {
                         Trigger::Tick => {
                             self.tick_decay();
                             self.tick_increase();
-                        },
+                        }
                     }
                     terminal.draw(|frame| self.draw(frame))?;
-                },
+                }
                 GameState::Exiting => {
                     self.save();
                     self.exit();
@@ -113,7 +120,7 @@ impl Game {
     fn tick_increase(&mut self) {
         self.tick_progress += 1;
     }
-    
+
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self) {
         self.ratagotchi.hunger -= 0.004;
@@ -134,8 +141,8 @@ impl Game {
     // Linux:   /home/alice/.config/ratagotchi
     // Windows: C:\Users\Alice\AppData\Roaming\shelakynn\ratagotchi
     // macOS:   /Users/Alice/Library/Application Support/shelakynn.ratagotchi
-    fn get_storage_folder(&self) -> Result<PathBuf, Box<dyn std::error::Error>>  {
-        if let Some(proj_dirs) = ProjectDirs::from("", "shelakynn",  "ratagotchi") {
+    fn get_storage_folder(&self) -> Result<PathBuf, Box<dyn std::error::Error>> {
+        if let Some(proj_dirs) = ProjectDirs::from("", "shelakynn", "ratagotchi") {
             let storage_folder = proj_dirs.data_dir();
             if !storage_folder.to_path_buf().exists() {
                 std::fs::create_dir_all(storage_folder).unwrap();
@@ -154,7 +161,7 @@ impl Game {
                 let _ = std::fs::write(full_path, data).inspect_err(|e| {
                     log::error!("Error while writing save file: {}", e);
                 });
-            },
+            }
             Err(e) => {
                 log::error!("Error while getting storage folder: {}", e);
             }
@@ -169,9 +176,8 @@ impl Game {
                         Ok(r) => self.ratagotchi = r,
                         Err(e) => log::error!("Error while reading save file: {}", e),
                     };
-                    
                 }
-            },
+            }
             Err(e) => {
                 log::error!("Error while getting storage folder: {}", e);
             }
@@ -181,7 +187,7 @@ impl Game {
 
 pub enum Trigger {
     Input(KeyEvent),
-    Tick
+    Tick,
 }
 
 pub fn handle_input_events(tx: mpsc::Sender<Trigger>) {
@@ -206,7 +212,7 @@ impl Default for Ratagotchi {
             health: 100.,
             happiness: 100.,
             discipline: 100.,
-            weight: 1.
+            weight: 1.,
         }
     }
 }

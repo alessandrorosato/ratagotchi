@@ -94,14 +94,18 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
             } else {
                 Color::default()
             });
-        self::render_image_as_paragraph(format!("assets/navigation/{}.png", title), None, tab_chunks[i])
-            .style(if is_selected {
-                Style::default().fg(Color::Black)
-            } else {
-                Style::default().fg(Color::White)
-            })
-            .block(block)
-            .render(tab_chunks[i], buf);
+        self::render_image_as_paragraph(
+            format!("assets/navigation/{}.png", title),
+            None,
+            tab_chunks[i],
+        )
+        .style(if is_selected {
+            Style::default().fg(Color::Black)
+        } else {
+            Style::default().fg(Color::White)
+        })
+        .block(block)
+        .render(tab_chunks[i], buf);
     }
 }
 
@@ -125,24 +129,27 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         .title(title.centered())
         .title_bottom(get_instructions(game))
         .border_set(border::THICK);
-    
 
     let [top, main, bottom] = block.inner(area).layout(&layout);
-    
+
     // Render outer border
     block.render(area, buf);
-    
+
     // navigation(game, (top, bottom), buf);
     navigation_row(game, top, buf, true);
     navigation_row(game, bottom, buf, false);
 
-    self::render_image_as_paragraph("assets/ratagotchi-idle.gif".to_string(), Some(game.tick_progress % 2), main)
-        .centered()
-        .render(main, buf);
+    self::render_image_as_paragraph(
+        "assets/ratagotchi-idle.gif".to_string(),
+        Some(game.tick_progress % 2),
+        main,
+    )
+    .centered()
+    .render(main, buf);
 }
 
 fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> Paragraph<'static> {
-    let rgba_img =match frame {
+    let rgba_img = match frame {
         Some(f) => {
             let file = File::open(path).unwrap();
             let reader = BufReader::new(file);
@@ -151,7 +158,7 @@ fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> 
             let frame = frames.nth(f);
 
             frame.unwrap().unwrap().into_buffer()
-        },
+        }
         None => {
             let image_reader = match ImageReader::open(path.to_lowercase()) {
                 Ok(r) => r,
@@ -159,24 +166,30 @@ fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> 
             };
 
             image_reader.decode().unwrap().into_rgba8()
-        },
+        }
     };
-    
+
     let lines = img_to_lines(&rgba_img);
 
-    // Vertically center the content 
-    let area_height = if area.height > 2 { area.height - 2 } else { area.height } as usize;
+    // Vertically center the content
+    let area_height = if area.height > 2 {
+        area.height - 2
+    } else {
+        area.height
+    } as usize;
     let line_count = lines.len();
     let top_padding = if area_height > line_count {
-            (area_height - line_count) / 2
-        } else {
-            0
-        };
+        (area_height - line_count) / 2
+    } else {
+        0
+    };
 
     let block = Block::new().padding(Padding::top(top_padding as u16));
 
-
-    Paragraph::new(lines).block(block).style(Style::new().white()).centered()
+    Paragraph::new(lines)
+        .block(block)
+        .style(Style::new().white())
+        .centered()
 }
 
 // Returns as white monochrome lines
@@ -217,7 +230,10 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
     lines
 }
 
-fn get_instructions(game: &Game) -> Line<'static>{
-    Line::from(format!(" <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, health: {:.3?} ", game.tick_progress, game.ratagotchi.health))
-                .alignment(Alignment::Center)
+fn get_instructions(game: &Game) -> Line<'static> {
+    Line::from(format!(
+        " <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, health: {:.3?} ",
+        game.tick_progress, game.ratagotchi.health
+    ))
+    .alignment(Alignment::Center)
 }
