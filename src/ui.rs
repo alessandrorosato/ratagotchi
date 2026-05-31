@@ -236,8 +236,8 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 
 fn get_instructions(game: &Game) -> Line<'static> {
     Line::from(format!(
-        " <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, activity_ticks: {}, health: {:.3?} ",
-        game.tick_progress, game.activity_ticks, game.ratagotchi.health
+        " <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, activity_ticks: {}, hunger: {:.3?} ",
+        game.tick_progress, game.activity_ticks, game.ratagotchi.hunger
     ))
     .alignment(Alignment::Center)
 }
@@ -255,6 +255,13 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
 fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
     if game.activity_ticks > 0 {
         // Use the feeding item to run a short animation
+        self::render_image_as_paragraph(
+            "assets/ratagotchi-eat.gif".to_string(),
+            Some(game.activity_ticks % 2),
+            area,
+        )
+        .centered()
+        .render(area, buf);
     } else {
         // Pick food
         let layout =
@@ -269,28 +276,20 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         let [bottom_left, bottom_right] = choice_row_bottom.inner(ratfood).layout(&choice_layout);
 
         // Rendering top and bottom arrows
-        Paragraph::new("pointy arrow ->")
-            // .block(choice_row_top)
-            .style(Style::new().white())
+        let active_area = if game.choice == Choice::Top {
+            top_left
+        } else {
+            bottom_left
+        };
+        self::render_image_as_paragraph("assets/arrow.png".to_string(), None, active_area)
             .centered()
-            .render(
-                if game.choice == Choice::Top {
-                    top_left
-                } else {
-                    bottom_left
-                },
-                buf,
-            );
+            .render(active_area, buf);
 
         // Rendering food options
-        Paragraph::new("imagine some cheese")
-            // .block(choice_row_top)
-            .style(Style::new().white())
+        self::render_image_as_paragraph("assets/cheese.png".to_string(), None, top_right)
             .centered()
             .render(top_right, buf);
-        Paragraph::new("imagine some ratfood")
-            // .block(choice_row_bottom)
-            .style(Style::new().white())
+        self::render_image_as_paragraph("assets/ratfood.png".to_string(), None, top_right)
             .centered()
             .render(bottom_right, buf);
     }
