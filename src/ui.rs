@@ -10,9 +10,9 @@ use ratatui::{
     widgets::{Block, Padding, Paragraph, Widget},
 };
 
-use crate::game::Game;
+use crate::game::{Choice, Game};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum GameView {
     #[default]
     Main,
@@ -139,13 +139,17 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     navigation_row(game, top, buf, true);
     navigation_row(game, bottom, buf, false);
 
-    self::render_image_as_paragraph(
-        "assets/ratagotchi-idle.gif".to_string(),
-        Some(game.tick_progress % 2),
-        main,
-    )
-    .centered()
-    .render(main, buf);
+    match game.active_view {
+        GameView::Main => render_main(game, main, buf),
+        GameView::Feed => render_feed(game, main, buf),
+        GameView::Lights => todo!(),
+        GameView::Play => todo!(),
+        GameView::Medicine => todo!(),
+        GameView::Bath => todo!(),
+        GameView::Health => todo!(),
+        GameView::Scold => todo!(),
+        GameView::Attention => todo!(),
+    }
 }
 
 fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> Paragraph<'static> {
@@ -232,8 +236,62 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 
 fn get_instructions(game: &Game) -> Line<'static> {
     Line::from(format!(
-        " <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, health: {:.3?} ",
-        game.tick_progress, game.ratagotchi.health
+        " <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, activity_ticks: {}, health: {:.3?} ",
+        game.tick_progress, game.activity_ticks, game.ratagotchi.health
     ))
     .alignment(Alignment::Center)
+}
+
+fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
+    self::render_image_as_paragraph(
+        "assets/ratagotchi-idle.gif".to_string(),
+        Some(game.tick_progress % 2),
+        area,
+    )
+    .centered()
+    .render(area, buf);
+}
+
+fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
+    if game.activity_ticks > 0 {
+        // Use the feeding item to run a short animation
+    } else {
+        // Pick food
+        let layout =
+            Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)]).spacing(1);
+        let block = Block::new();
+        let [cheese, ratfood] = block.inner(area).layout(&layout);
+        let choice_layout =
+            Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]);
+        let choice_row_top = Block::new();
+        let [top_left, top_right] = choice_row_top.inner(cheese).layout(&choice_layout);
+        let choice_row_bottom = Block::new();
+        let [bottom_left, bottom_right] = choice_row_bottom.inner(ratfood).layout(&choice_layout);
+
+        // Rendering top and bottom arrows
+        Paragraph::new("pointy arrow ->")
+            // .block(choice_row_top)
+            .style(Style::new().white())
+            .centered()
+            .render(
+                if game.choice == Choice::Top {
+                    top_left
+                } else {
+                    bottom_left
+                },
+                buf,
+            );
+
+        // Rendering food options
+        Paragraph::new("imagine some cheese")
+            // .block(choice_row_top)
+            .style(Style::new().white())
+            .centered()
+            .render(top_right, buf);
+        Paragraph::new("imagine some ratfood")
+            // .block(choice_row_bottom)
+            .style(Style::new().white())
+            .centered()
+            .render(bottom_right, buf);
+    }
 }

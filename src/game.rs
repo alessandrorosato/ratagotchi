@@ -13,9 +13,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{
-        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
+        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
         RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
-        RATAGOTCHI_DECAY_FACTOR_HUNGER,
+        RATAGOTCHI_DECAY_FACTOR_HUNGER, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::GameView,
 };
@@ -28,6 +28,8 @@ pub struct Game {
     pub highlighted_tab: GameView,
     pub tick_progress: usize,
     pub ratagotchi: Ratagotchi,
+    pub activity_ticks: usize,
+    pub choice: Choice,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,6 +48,13 @@ pub enum GameState {
     CatchingUp,
     Running,
     Exiting,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub enum Choice {
+    #[default]
+    Top,
+    Bottom,
 }
 
 impl Game {
@@ -92,7 +101,25 @@ impl Game {
             KeyCode::Char('q') => self.next_state(GameState::Exiting),
             KeyCode::Tab => self.next_view(),
             KeyCode::BackTab => self.prev_view(),
-            KeyCode::Enter => self.change_view(),
+            KeyCode::Enter => {
+                if self.active_view != self.highlighted_tab {
+                    self.change_view();
+                } else {
+                    self.do_action();
+                }
+            }
+            KeyCode::Esc => self.set_view(GameView::Main),
+            KeyCode::Up | KeyCode::Down => self.change_choice(),
+            KeyCode::Right => {
+                if self.activity_ticks == 0 {
+                    self.next_view()
+                }
+            }
+            KeyCode::Left => {
+                if self.activity_ticks == 0 {
+                    self.prev_view();
+                }
+            }
             _ => {}
         }
     }
@@ -129,8 +156,17 @@ impl Game {
         self.active_view = self.highlighted_tab.clone();
     }
 
+    fn set_view(&mut self, view: GameView) {
+        self.active_view = view;
+    }
+
     fn tick_increase(&mut self) {
         self.tick_progress += 1;
+        self.activity_ticks = if self.activity_ticks > 0 {
+            self.activity_ticks - 1
+        } else {
+            0
+        };
     }
 
     // TODO: I just threw random factors here, it probably needs a second look
@@ -145,6 +181,25 @@ impl Game {
 
     fn next_state(&mut self, state: GameState) {
         self.state = state;
+    }
+
+    fn change_choice(&mut self) {
+        self.choice = if self.choice == Choice::Top {
+            Choice::Bottom
+        } else {
+            Choice::Top
+        };
+    }
+
+    fn do_action(&mut self) {
+        if self.active_view == GameView::Feed {
+            let hunger_restored = match self.choice {
+                Choice::Top => STAT_INCREASE_FOOD_CHEESE,
+                Choice::Bottom => STAT_INCREASE_FOOD_RATFOOD,
+            };
+            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
+            self.ratagotchi.hunger += hunger_restored;
+        }
     }
 
     fn exit(&mut self) {
