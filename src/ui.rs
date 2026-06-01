@@ -26,6 +26,15 @@ pub enum GameView {
     Attention,
 }
 
+#[derive(Debug, Default)]
+pub enum RenderStats {
+    #[default]
+    Stats,
+    Discipline,
+    Hungry,
+    Happiness,
+}
+
 impl fmt::Display for GameView {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -146,7 +155,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Play => todo!(),
         GameView::Medicine => todo!(),
         GameView::Bath => todo!(),
-        GameView::Health => todo!(),
+        GameView::Health => render_health(game, main, buf),
         GameView::Scold => todo!(),
         GameView::Attention => todo!(),
     }
@@ -242,6 +251,20 @@ fn get_instructions(game: &Game) -> Line<'static> {
     .alignment(Alignment::Center)
 }
 
+fn two_by_two_layout(area: Rect) -> [Rect; 4] {
+    let rows =
+        Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)]).spacing(1);
+    let block = Block::new();
+    let [top_row, bottom_row] = block.inner(area).layout(&rows);
+    let choice_layout =
+        Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]);
+    let choice_row_top = Block::new();
+    let [top_left, top_right] = choice_row_top.inner(top_row).layout(&choice_layout);
+    let choice_row_bottom = Block::new();
+    let [bottom_left, bottom_right] = choice_row_bottom.inner(bottom_row).layout(&choice_layout);
+    [top_left, top_right, bottom_left, bottom_right]
+}
+
 fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
     self::render_image_as_paragraph(
         "assets/ratagotchi-idle.gif".to_string(),
@@ -263,18 +286,7 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         .centered()
         .render(area, buf);
     } else {
-        // Pick food
-        let layout =
-            Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)]).spacing(1);
-        let block = Block::new();
-        let [cheese, ratfood] = block.inner(area).layout(&layout);
-        let choice_layout =
-            Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]);
-        let choice_row_top = Block::new();
-        let [top_left, top_right] = choice_row_top.inner(cheese).layout(&choice_layout);
-        let choice_row_bottom = Block::new();
-        let [bottom_left, bottom_right] = choice_row_bottom.inner(ratfood).layout(&choice_layout);
-
+        let [top_left, top_right, bottom_left, bottom_right] = two_by_two_layout(area);
         // Rendering top and bottom arrows
         let active_area = if game.choice == Choice::Top {
             top_left
@@ -293,4 +305,24 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
             .centered()
             .render(bottom_right, buf);
     }
+}
+
+fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
+    let [top_left, top_right, bottom_left, bottom_right] = two_by_two_layout(area);
+    Paragraph::new("Ratagotchi head?")
+        .style(Style::new().white())
+        .centered()
+        .render(top_left, buf);
+    Paragraph::new(format!("Age: {:.0}", game.ratagotchi.age))
+        .style(Style::new().white())
+        .centered()
+        .render(top_right, buf);
+    Paragraph::new("Image of a scale.")
+        .style(Style::new().white())
+        .centered()
+        .render(bottom_left, buf);
+    Paragraph::new(format!("Weight: {:.0}", game.ratagotchi.weight))
+        .style(Style::new().white())
+        .centered()
+        .render(bottom_right, buf);
 }

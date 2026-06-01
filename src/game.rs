@@ -13,11 +13,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{
-        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
-        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
-        RATAGOTCHI_DECAY_FACTOR_HUNGER, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_AGE_CONVERSION_RATE,
+        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
+        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
-    ui::GameView,
+    ui::{GameView, RenderStats},
 };
 
 #[derive(Debug, Default)]
@@ -30,6 +31,7 @@ pub struct Game {
     pub ratagotchi: Ratagotchi,
     pub activity_ticks: usize,
     pub choice: Choice,
+    pub stats_screen: RenderStats,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,6 +41,8 @@ pub struct Ratagotchi {
     pub happiness: f32,
     pub discipline: f32,
     pub weight: f32,
+    pub birth: DateTime<Utc>,
+    pub age: f32,
     pub last_update: DateTime<Utc>,
 }
 
@@ -74,7 +78,7 @@ impl Game {
                     match rx.recv().unwrap() {
                         Trigger::Input(key_event) => self.handle_key_event(key_event),
                         Trigger::Tick => {
-                            self.tick_decay(1.0);
+                            self.update_stats();
                             self.tick_increase();
                         }
                     }
@@ -177,6 +181,12 @@ impl Game {
             RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks;
         self.ratagotchi.discipline -=
             RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks;
+    }
+
+    pub fn update_stats(&mut self) {
+        self.tick_decay(1.0);
+        self.ratagotchi.age =
+            (Utc::now() - self.ratagotchi.birth).as_seconds_f32() / RATAGOTCHI_AGE_CONVERSION_RATE;
     }
 
     fn next_state(&mut self, state: GameState) {
@@ -284,11 +294,13 @@ pub fn tick_lapse(tx: mpsc::Sender<Trigger>) {
 impl Default for Ratagotchi {
     fn default() -> Self {
         Ratagotchi {
-            hunger: 100.,
-            health: 100.,
-            happiness: 100.,
-            discipline: 100.,
-            weight: 1.,
+            hunger: 100.0,
+            health: 100.0,
+            happiness: 100.0,
+            discipline: 100.0,
+            weight: 1.0,
+            birth: Utc::now(),
+            age: 0.0,
             last_update: Utc::now(),
         }
     }
