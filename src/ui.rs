@@ -9,6 +9,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Padding, Paragraph, Widget},
 };
+use tui_big_text::{BigText, PixelSize};
 
 use crate::game::{Choice, Game};
 
@@ -309,20 +310,36 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
 
 fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
     let [top_left, top_right, bottom_left, bottom_right] = two_by_two_layout(area);
-    Paragraph::new("Ratagotchi head?")
-        .style(Style::new().white())
-        .centered()
-        .render(top_left, buf);
-    Paragraph::new(format!("Age: {:.0}", game.ratagotchi.age))
-        .style(Style::new().white())
-        .centered()
-        .render(top_right, buf);
-    Paragraph::new("Image of a scale.")
-        .style(Style::new().white())
-        .centered()
-        .render(bottom_left, buf);
-    Paragraph::new(format!("Weight: {:.0}", game.ratagotchi.weight))
-        .style(Style::new().white())
-        .centered()
-        .render(bottom_right, buf);
+    match game.stats_screen {
+        RenderStats::Stats => {
+            self::render_image_as_paragraph(
+                "assets/ratagotchi-head.png".to_string(),
+                None,
+                top_left,
+            )
+            .centered()
+            .render(top_left, buf);
+            BigText::builder()
+                .pixel_size(PixelSize::Full)
+                .style(Style::new().white())
+                .centered()
+                .lines([format!("{:.0} yr", game.ratagotchi.age).into()])
+                .build()
+                .render(top_right, buf);
+
+            self::render_image_as_paragraph("assets/scale.png".to_string(), None, bottom_left)
+                .centered()
+                .render(bottom_left, buf);
+            BigText::builder()
+                .pixel_size(PixelSize::Full)
+                .style(Style::new().white())
+                .centered()
+                .lines([format!("{:.} kg", game.ratagotchi.weight).into()])
+                .build()
+                .render(bottom_right, buf);
+        }
+        RenderStats::Discipline => todo!(),
+        RenderStats::Hungry => todo!(),
+        RenderStats::Happiness => todo!(),
+    }
 }
