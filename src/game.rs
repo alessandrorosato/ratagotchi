@@ -233,7 +233,7 @@ impl Game {
                 Choice::Bottom => STAT_INCREASE_FOOD_RATFOOD,
             };
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
-            self.ratagotchi.hunger += hunger_restored;
+            self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
         }
     }
 
