@@ -266,6 +266,54 @@ fn two_by_two_layout(area: Rect) -> [Rect; 4] {
     [top_left, top_right, bottom_left, bottom_right]
 }
 
+// Render the top half with the title and return the bottom one
+fn render_stats_title(title: Line<'_>, area: Rect, buf: &mut Buffer) -> Rect {
+    let rows =
+        Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)]).spacing(1);
+    let block = Block::new();
+    let [top_row, bottom_row] = block.inner(area).layout(&rows);
+
+    let num_lines = 1;
+    let text_height = num_lines * 8;
+    let sub_rows = Layout::vertical([Constraint::Min(0), Constraint::Length(text_height as u16)])
+        .split(top_row);
+
+    BigText::builder()
+        .pixel_size(PixelSize::Full)
+        .style(Style::new().white())
+        .centered()
+        .lines([title])
+        .build()
+        .render(sub_rows[1], buf);
+    bottom_row
+}
+
+fn render_stats_hearts(value: f32, area: Rect, buf: &mut Buffer) {
+    let hearts_layout = Layout::horizontal([
+        Constraint::Min(0),
+        Constraint::Length(16),
+        Constraint::Length(16),
+        Constraint::Length(16),
+        Constraint::Length(16),
+        Constraint::Min(0),
+    ])
+    .spacing(4)
+    .split(area);
+
+    let full_hearts = (value / 25.0).ceil() as usize;
+
+    for i in 1..hearts_layout.len() - 1 {
+        let which_image = if full_hearts >= i {
+            "assets/heart.png"
+        } else {
+            "assets/heart-empty.png"
+        };
+        self::render_image_as_paragraph(which_image.to_string(), None, area)
+            .centered()
+            .render(hearts_layout[i], buf);
+    }
+}
+
 fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
     self::render_image_as_paragraph(
         "assets/ratagotchi-idle.gif".to_string(),
@@ -338,8 +386,18 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
                 .build()
                 .render(bottom_right, buf);
         }
-        RenderStats::Discipline => todo!(),
-        RenderStats::Hungry => todo!(),
-        RenderStats::Happiness => todo!(),
+        RenderStats::Discipline => {
+            let bottom_row = render_stats_title(Line::from("Discipline"), area, buf);
+            // TODO: Using hearts, to be replaced with the progress bar/gauge
+            render_stats_hearts(game.ratagotchi.discipline, bottom_row, buf);
+        }
+        RenderStats::Hungry => {
+            let bottom_row = render_stats_title(Line::from("Hungry"), area, buf);
+            render_stats_hearts(game.ratagotchi.hunger, bottom_row, buf);
+        }
+        RenderStats::Happiness => {
+            let bottom_row = render_stats_title(Line::from("Happiness"), area, buf);
+            render_stats_hearts(game.ratagotchi.happiness, bottom_row, buf);
+        }
     }
 }

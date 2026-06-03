@@ -61,6 +61,12 @@ pub enum Choice {
     Bottom,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ChoiceDirection {
+    Up,
+    Down,
+}
+
 impl Game {
     pub fn run(
         &mut self,
@@ -113,7 +119,8 @@ impl Game {
                 }
             }
             KeyCode::Esc => self.set_view(GameView::Main),
-            KeyCode::Up | KeyCode::Down => self.change_choice(),
+            KeyCode::Up => self.change_choice(ChoiceDirection::Up),
+            KeyCode::Down => self.change_choice(ChoiceDirection::Down),
             KeyCode::Right => {
                 if self.activity_ticks == 0 {
                     self.next_view()
@@ -193,12 +200,30 @@ impl Game {
         self.state = state;
     }
 
-    fn change_choice(&mut self) {
-        self.choice = if self.choice == Choice::Top {
-            Choice::Bottom
+    fn change_choice(&mut self, direction: ChoiceDirection) {
+        if self.active_view == GameView::Health {
+            if direction == ChoiceDirection::Up {
+                self.stats_screen = match self.stats_screen {
+                    RenderStats::Stats => RenderStats::Happiness,
+                    RenderStats::Discipline => RenderStats::Stats,
+                    RenderStats::Hungry => RenderStats::Discipline,
+                    RenderStats::Happiness => RenderStats::Hungry,
+                };
+            } else {
+                self.stats_screen = match self.stats_screen {
+                    RenderStats::Stats => RenderStats::Discipline,
+                    RenderStats::Discipline => RenderStats::Hungry,
+                    RenderStats::Hungry => RenderStats::Happiness,
+                    RenderStats::Happiness => RenderStats::Stats,
+                };
+            }
         } else {
-            Choice::Top
-        };
+            self.choice = if self.choice == Choice::Top {
+                Choice::Bottom
+            } else {
+                Choice::Top
+            };
+        }
     }
 
     fn do_action(&mut self) {
