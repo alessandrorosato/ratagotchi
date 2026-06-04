@@ -11,7 +11,10 @@ use ratatui::{
 };
 use tui_big_text::{BigText, PixelSize};
 
-use crate::game::{Choice, Game};
+use crate::{
+    game::{Choice, Game},
+    widgets::ProgressBar,
+};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum GameView {
@@ -388,8 +391,12 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
         }
         RenderStats::Discipline => {
             let bottom_row = render_stats_title(Line::from("Discipline"), area, buf);
-            // TODO: Using hearts, to be replaced with the progress bar/gauge
-            render_stats_hearts(game.ratagotchi.discipline, bottom_row, buf);
+            ProgressBar::default()
+                .ratio(game.ratagotchi.discipline / 100.)
+                .width(bottom_row.width / 2)
+                .height(2)
+                .bordered()
+                .render(bottom_row, buf);
         }
         RenderStats::Hungry => {
             let bottom_row = render_stats_title(Line::from("Hungry"), area, buf);
