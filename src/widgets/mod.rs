@@ -2,7 +2,8 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Widget},
+    symbols,
+    widgets::{Block, Widget},
 };
 
 #[derive(Default)]
@@ -62,7 +63,18 @@ impl Widget for ProgressBar {
 
         let widget_area = if self.bordered {
             // TODO: Change this to custom border
-            let borderd_block = Block::bordered().border_type(BorderType::Thick);
+            let borderd_block = Block::bordered()
+                .border_set(symbols::border::Set {
+                    top_left: "█",
+                    top_right: "█",
+                    bottom_left: "█",
+                    bottom_right: "█",
+                    vertical_left: "█",
+                    vertical_right: "█",
+                    horizontal_top: "▀",
+                    horizontal_bottom: "▄",
+                })
+                .style(Style::default().fg(Color::White));
             let inner_area = borderd_block.inner(bar_container[0]);
             borderd_block.render(bar_container[0], buf);
 
@@ -93,8 +105,10 @@ impl Widget for ProgressBar {
                 let is_first_row = y == first_row;
                 let is_last_row = y == last_row;
                 let (symbol, style) = if x_offset < filled_width {
-                    if self.height < 3 {
-                        if pattern_index % 2 == 0 {
+                    if pattern_index == 0 {
+                        (" ", bar_style)
+                    } else if self.height < 3 {
+                        if pattern_index % 2 == 1 {
                             ("█", bar_style)
                         } else {
                             (" ", bar_style)
