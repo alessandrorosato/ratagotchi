@@ -329,14 +329,30 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
 
 fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
     if game.activity_ticks > 0 {
+        let layout = Layout::horizontal([Constraint::Min(16), Constraint::Fill(1)]).split(area);
+
         // Use the feeding item to run a short animation
         self::render_image_as_paragraph(
             "assets/ratagotchi-eat.gif".to_string(),
             Some(game.activity_ticks % 2),
-            area,
+            layout[1],
         )
         .centered()
-        .render(area, buf);
+        .render(layout[1], buf);
+
+        // Food being chopped away
+        let food_asset = if game.choice == Choice::Top {
+            "assets/cheese-eat.gif"
+        } else {
+            "assets/ratfood-eat.gif"
+        };
+        self::render_image_as_paragraph(
+            food_asset.to_string(),
+            Some(4 - (game.activity_ticks / 2)),
+            layout[0],
+        )
+        .centered()
+        .render(layout[0], buf);
     } else {
         let [top_left, top_right, bottom_left, bottom_right] = two_by_two_layout(area);
         // Rendering top and bottom arrows
