@@ -1,5 +1,6 @@
 use std::{fmt, fs::File, io::BufReader};
 
+use chrono::Utc;
 use image::{AnimationDecoder, ImageReader, RgbaImage, codecs::gif::GifDecoder};
 use ratatui::{
     buffer::Buffer,
@@ -124,8 +125,83 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
 
 impl Widget for &Game {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // TODO: Here we likely want to differentiate between the Catching-Up and the Running states
-        render_view(self, area, buf)
+        match self.state {
+            crate::game::GameState::CatchingUp => render_catching_up(self, area, buf),
+            crate::game::GameState::Running => render_view(self, area, buf),
+            crate::game::GameState::Exiting => todo!(), // This effectively break saving before exiting
+        }
+    }
+}
+
+fn render_catching_up(game: &Game, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Ratagotchi ".bold());
+    let vertical_layout =
+        Layout::vertical([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
+            .spacing(1)
+            .split(area);
+    let horizontal_layout =
+        Layout::horizontal([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
+            .spacing(1)
+            .split(vertical_layout[1]);
+
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(get_instructions(game))
+        .border_set(border::THICK);
+
+    let time_delta = (Utc::now() - game.ratagotchi.last_update).num_seconds();
+    let human_speech = human_friendly_time_delta(time_delta);
+    let line = Line::from(format!("Catching Up: {}", human_speech));
+
+    Paragraph::new(line)
+        .block(block)
+        .style(Style::new().white())
+        .centered()
+        .render(horizontal_layout[1], buf);
+}
+
+fn human_friendly_time_delta(time_delta: i64) -> String {
+    let days = time_delta / 86400;
+    let remaining_seconds = time_delta % 86400;
+    let hours = remaining_seconds / 3600;
+    let remaining_seconds = remaining_seconds % 3600;
+    let minutes = remaining_seconds / 60;
+    let seconds = remaining_seconds % 60;
+
+    let mut parts = Vec::new();
+    if days > 0 {
+        parts.push(format!("{} day{}", days, if days > 1 { "s" } else { "" }));
+    }
+    if hours > 0 {
+        parts.push(format!(
+            "{} hour{}",
+            hours,
+            if hours > 1 { "s" } else { "" }
+        ));
+    }
+    if minutes > 0 {
+        parts.push(format!(
+            "{} minute{}",
+            minutes,
+            if minutes > 1 { "s" } else { "" }
+        ));
+    }
+    if seconds > 0 && parts.is_empty() {
+        parts.push(format!(
+            "{} second{}",
+            seconds,
+            if seconds > 1 { "s" } else { "" }
+        ));
+    }
+
+    match parts.len() {
+        0 => "0 seconds".to_string(),
+        1 => parts[0].clone(),
+        _ => {
+            let last = parts.pop().unwrap();
+            let rest = parts.join(", ");
+            format!("{} and {}", rest, last)
+        }
     }
 }
 
