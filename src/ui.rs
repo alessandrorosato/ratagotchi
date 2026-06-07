@@ -128,17 +128,20 @@ impl Widget for &Game {
         match self.state {
             crate::game::GameState::CatchingUp => render_catching_up(self, area, buf),
             crate::game::GameState::Running => render_view(self, area, buf),
-            crate::game::GameState::Exiting => render_exiting(self, area, buf),
+            crate::game::GameState::Exiting => render_exiting(area, buf),
         }
     }
 }
 
 fn render_catching_up(game: &Game, area: Rect, buf: &mut Buffer) {
     let title = Line::from(" Ratagotchi ".bold());
-    let vertical_layout =
-        Layout::vertical([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
-            .spacing(1)
-            .split(area);
+    let vertical_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(3),
+        Constraint::Fill(1),
+    ])
+    .spacing(1)
+    .split(area);
     let horizontal_layout =
         Layout::horizontal([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
             .spacing(1)
@@ -146,7 +149,6 @@ fn render_catching_up(game: &Game, area: Rect, buf: &mut Buffer) {
 
     let block = Block::bordered()
         .title(title.centered())
-        .title_bottom(get_instructions(game))
         .border_set(border::THICK);
 
     let time_delta = (Utc::now() - game.ratagotchi.last_update).num_seconds();
@@ -205,12 +207,15 @@ fn human_friendly_time_delta(time_delta: i64) -> String {
     }
 }
 
-fn render_exiting(game: &Game, area: Rect, buf: &mut Buffer) {
+fn render_exiting(area: Rect, buf: &mut Buffer) {
     let title = Line::from(" Ratagotchi ".bold());
-    let vertical_layout =
-        Layout::vertical([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
-            .spacing(1)
-            .split(area);
+    let vertical_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(3),
+        Constraint::Fill(1),
+    ])
+    .spacing(1)
+    .split(area);
     let horizontal_layout =
         Layout::horizontal([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
             .spacing(1)
@@ -218,7 +223,6 @@ fn render_exiting(game: &Game, area: Rect, buf: &mut Buffer) {
 
     let block = Block::bordered()
         .title(title.centered())
-        .title_bottom(get_instructions(game))
         .border_set(border::THICK);
 
     let line = Line::from("Saving progress...");

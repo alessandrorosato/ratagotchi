@@ -100,7 +100,7 @@ impl Game {
                 GameState::Exiting => {
                     terminal.draw(|frame| self.draw(frame))?;
                     self.save();
-                    thread::sleep(Duration::from_millis(2000));
+                    thread::sleep(Duration::from_millis(1000));
                     self.exit();
                 }
             }
