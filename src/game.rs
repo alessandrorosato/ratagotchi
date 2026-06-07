@@ -98,7 +98,9 @@ impl Game {
                     terminal.draw(|frame| self.draw(frame))?;
                 }
                 GameState::Exiting => {
+                    terminal.draw(|frame| self.draw(frame))?;
                     self.save();
+                    thread::sleep(Duration::from_millis(2000));
                     self.exit();
                 }
             }

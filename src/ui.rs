@@ -128,7 +128,7 @@ impl Widget for &Game {
         match self.state {
             crate::game::GameState::CatchingUp => render_catching_up(self, area, buf),
             crate::game::GameState::Running => render_view(self, area, buf),
-            crate::game::GameState::Exiting => todo!(), // This effectively break saving before exiting
+            crate::game::GameState::Exiting => render_exiting(self, area, buf),
         }
     }
 }
@@ -203,6 +203,31 @@ fn human_friendly_time_delta(time_delta: i64) -> String {
             format!("{} and {}", rest, last)
         }
     }
+}
+
+fn render_exiting(game: &Game, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Ratagotchi ".bold());
+    let vertical_layout =
+        Layout::vertical([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
+            .spacing(1)
+            .split(area);
+    let horizontal_layout =
+        Layout::horizontal([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
+            .spacing(1)
+            .split(vertical_layout[1]);
+
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(get_instructions(game))
+        .border_set(border::THICK);
+
+    let line = Line::from("Saving progress...");
+
+    Paragraph::new(line)
+        .block(block)
+        .style(Style::new().white())
+        .centered()
+        .render(horizontal_layout[1], buf);
 }
 
 fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
