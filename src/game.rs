@@ -79,9 +79,6 @@ impl Game {
                     self.load();
                     terminal.draw(|frame| self.draw(frame))?;
                     self.catchup();
-                    // TODO: Ideally we dont' block the thread but it should wait for catchup() to be done,
-                    // but it's unlikely that loading a savegame and calculating stats would take seconds
-                    thread::sleep(Duration::from_millis(2000));
                     self.next_state(GameState::Running);
                 }
                 GameState::Running => {
