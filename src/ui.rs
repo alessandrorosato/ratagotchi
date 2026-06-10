@@ -40,6 +40,12 @@ pub enum RenderStats {
     Happiness,
 }
 
+#[derive(Debug)]
+enum VerticalPosition {
+    Center,
+    Bottom,
+}
+
 impl fmt::Display for GameView {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -110,8 +116,9 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
             });
         self::render_image_as_paragraph(
             format!("assets/navigation/{}.png", title),
-            None,
             tab_chunks[i],
+            VerticalPosition::Center,
+            None,
         )
         .style(if is_selected {
             Style::default().fg(Color::Black)
@@ -270,7 +277,12 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     }
 }
 
-fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> Paragraph<'static> {
+fn render_image_as_paragraph(
+    path: String,
+    area: Rect,
+    vertical_position: VerticalPosition,
+    frame: Option<usize>,
+) -> Paragraph<'static> {
     let rgba_img = match frame {
         Some(f) => {
             let file = File::open(path).unwrap();
@@ -293,20 +305,34 @@ fn render_image_as_paragraph(path: String, frame: Option<usize>, area: Rect) -> 
 
     let lines = img_to_lines(&rgba_img);
 
-    // Vertically center the content
-    let area_height = if area.height > 2 {
-        area.height - 2
-    } else {
-        area.height
-    } as usize;
-    let line_count = lines.len();
-    let top_padding = if area_height > line_count {
-        (area_height - line_count) / 2
-    } else {
-        0
+    let padding = match vertical_position {
+        VerticalPosition::Center => {
+            let area_height = if area.height > 2 {
+                area.height - 2
+            } else {
+                area.height
+            } as usize;
+            let line_count = lines.len();
+            let top_padding = if area_height > line_count {
+                (area_height - line_count) / 2
+            } else {
+                0
+            };
+            Padding::top(top_padding as u16)
+        }
+        VerticalPosition::Bottom => {
+            let area_height = if area.height > 2 {
+                area.height - 2
+            } else {
+                area.height
+            } as usize;
+            let line_count = lines.len();
+            let top_padding = area_height.saturating_sub(line_count);
+            Padding::top(top_padding as u16)
+        }
     };
 
-    let block = Block::new().padding(Padding::top(top_padding as u16));
+    let block = Block::new().padding(padding);
 
     Paragraph::new(lines)
         .block(block)
@@ -374,6 +400,19 @@ fn two_by_two_layout(area: Rect) -> [Rect; 4] {
     [top_left, top_right, bottom_left, bottom_right]
 }
 
+fn center_and_columns_layout(area: Rect) -> [Rect; 3] {
+    let rows = Layout::horizontal([
+        Constraint::Min(30),
+        Constraint::Fill(1),
+        Constraint::Min(30),
+    ])
+    .spacing(1);
+    let block = Block::new();
+    let [left, main_area, right] = block.inner(area).layout(&rows);
+
+    [left, main_area, right]
+}
+
 // Render the top half with the title and return the bottom one
 fn render_stats_title(title: Line<'_>, area: Rect, buf: &mut Buffer) -> Rect {
     let rows =
@@ -416,20 +455,50 @@ fn render_stats_hearts(value: f32, area: Rect, buf: &mut Buffer) {
         } else {
             "assets/heart-empty.png"
         };
-        self::render_image_as_paragraph(which_image.to_string(), None, area)
-            .centered()
-            .render(hearts_layout[i], buf);
+        self::render_image_as_paragraph(
+            which_image.to_string(),
+            area,
+            VerticalPosition::Center,
+            None,
+        )
+        .centered()
+        .render(hearts_layout[i], buf);
     }
 }
 
 fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
+    let [left, center, right] = center_and_columns_layout(area);
     self::render_image_as_paragraph(
         "assets/ratagotchi-idle.gif".to_string(),
+        center,
+        VerticalPosition::Center,
         Some(game.tick_progress % 2),
-        area,
     )
     .centered()
-    .render(area, buf);
+    .render(center, buf);
+
+    // Define the poop situation
+    if game.ratagotchi.poop >= 50. {
+        self::render_image_as_paragraph(
+            "assets/poop.gif".to_string(),
+            left,
+            VerticalPosition::Bottom,
+            Some(game.tick_progress % 2),
+        )
+        .centered()
+        .render(left, buf);
+    }
+
+    if game.ratagotchi.poop >= 95. {
+        self::render_image_as_paragraph(
+            "assets/poop.gif".to_string(),
+            right,
+            VerticalPosition::Center,
+            Some(game.tick_progress % 2),
+        )
+        .centered()
+        .render(right, buf);
+    }
 }
 
 fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
@@ -442,8 +511,9 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         // Use the feeding item to run a short animation
         self::render_image_as_paragraph(
             "assets/ratagotchi-eat.gif".to_string(),
-            Some(game.activity_ticks % 2),
             view_layout[1],
+            VerticalPosition::Center,
+            Some(game.activity_ticks % 2),
         )
         .centered()
         .render(view_layout[1], buf);
@@ -456,8 +526,9 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         };
         self::render_image_as_paragraph(
             food_asset.to_string(),
-            Some(4 - (game.activity_ticks / 2)),
             left_column[0],
+            VerticalPosition::Center,
+            Some(4 - (game.activity_ticks / 2)),
         )
         .centered()
         .render(left_column[0], buf);
@@ -469,17 +540,32 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         } else {
             bottom_left
         };
-        self::render_image_as_paragraph("assets/arrow.png".to_string(), None, active_area)
-            .centered()
-            .render(active_area, buf);
+        self::render_image_as_paragraph(
+            "assets/arrow.png".to_string(),
+            active_area,
+            VerticalPosition::Center,
+            None,
+        )
+        .centered()
+        .render(active_area, buf);
 
         // Rendering food options
-        self::render_image_as_paragraph("assets/cheese.png".to_string(), None, top_right)
-            .centered()
-            .render(top_right, buf);
-        self::render_image_as_paragraph("assets/ratfood.png".to_string(), None, top_right)
-            .centered()
-            .render(bottom_right, buf);
+        self::render_image_as_paragraph(
+            "assets/cheese.png".to_string(),
+            top_right,
+            VerticalPosition::Center,
+            None,
+        )
+        .centered()
+        .render(top_right, buf);
+        self::render_image_as_paragraph(
+            "assets/ratfood.png".to_string(),
+            top_right,
+            VerticalPosition::Center,
+            None,
+        )
+        .centered()
+        .render(bottom_right, buf);
     }
 }
 
@@ -493,8 +579,9 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
         RenderStats::Stats => {
             self::render_image_as_paragraph(
                 "assets/ratagotchi-head.png".to_string(),
-                None,
                 top_left,
+                VerticalPosition::Center,
+                None,
             )
             .centered()
             .render(top_left, buf);
@@ -506,9 +593,14 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
                 .build()
                 .render(top_right, buf);
 
-            self::render_image_as_paragraph("assets/scale.png".to_string(), None, bottom_left)
-                .centered()
-                .render(bottom_left, buf);
+            self::render_image_as_paragraph(
+                "assets/scale.png".to_string(),
+                bottom_left,
+                VerticalPosition::Center,
+                None,
+            )
+            .centered()
+            .render(bottom_left, buf);
             BigText::builder()
                 .pixel_size(PixelSize::Full)
                 .style(Style::new().white())

@@ -15,8 +15,8 @@ use crate::{
     config::{
         GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_AGE_CONVERSION_RATE,
         RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
-        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER, STAT_INCREASE_FOOD_CHEESE,
-        STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
+        RATAGOTCHI_DECAY_FACTOR_POOP, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::{GameView, RenderStats},
 };
@@ -41,6 +41,7 @@ pub struct Ratagotchi {
     pub happiness: f32,
     pub discipline: f32,
     pub weight: f32,
+    pub poop: f32,
     pub birth: DateTime<Utc>,
     pub age: f32,
     pub last_update: DateTime<Utc>,
@@ -191,6 +192,7 @@ impl Game {
             RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks;
         self.ratagotchi.discipline -=
             RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks;
+        self.ratagotchi.poop += RATAGOTCHI_DECAY_FACTOR_POOP * ticks;
     }
 
     pub fn update_stats(&mut self) {
@@ -327,6 +329,7 @@ impl Default for Ratagotchi {
             happiness: 100.0,
             discipline: 100.0,
             weight: 1.0,
+            poop: 0.0,
             birth: Utc::now(),
             age: 0.0,
             last_update: Utc::now(),
