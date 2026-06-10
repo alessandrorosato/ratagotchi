@@ -88,6 +88,7 @@ impl Game {
                         Trigger::Tick => {
                             self.update_stats();
                             self.tick_increase();
+                            self.back_to_main();
                         }
                     }
                     if self.tick_progress.is_multiple_of(GAME_AUTOSAVE_FREQUENCY) {
@@ -116,7 +117,9 @@ impl Game {
             KeyCode::Tab => self.next_view(),
             KeyCode::BackTab => self.prev_view(),
             KeyCode::Enter => {
-                if self.active_view != self.highlighted_tab {
+                if self.highlighted_tab == GameView::Bath {
+                    self.do_action();
+                } else if self.active_view != self.highlighted_tab {
                     self.change_view();
                 } else {
                     self.do_action();
@@ -231,6 +234,16 @@ impl Game {
         }
     }
 
+    fn back_to_main(&mut self) {
+        if self.active_view == GameView::Bath
+            && self.highlighted_tab == GameView::Bath
+            && self.activity_ticks == 0
+        {
+            self.active_view = GameView::default();
+            self.highlighted_tab = GameView::default();
+        }
+    }
+
     fn do_action(&mut self) {
         if self.active_view == GameView::Feed {
             let hunger_restored = match self.choice {
@@ -239,6 +252,11 @@ impl Game {
             };
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
+        } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
+            self.active_view = GameView::Bath;
+            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
+            self.ratagotchi.poop = 0.0;
+            // TOOD: Add some happiness after the bath
         }
     }
 

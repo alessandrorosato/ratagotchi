@@ -270,7 +270,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Lights => render_lights(game, main, buf),
         GameView::Play => todo!(),
         GameView::Medicine => todo!(),
-        GameView::Bath => todo!(),
+        GameView::Bath => render_bath(game, main, buf),
         GameView::Health => render_health(game, main, buf),
         GameView::Scold => todo!(),
         GameView::Attention => todo!(),
@@ -571,6 +571,10 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
 
 fn render_lights(_game: &Game, _area: Rect, _buf: &mut Buffer) {
     // TODO: Add something animated "in the dark"
+}
+
+fn render_bath(game: &Game, area: Rect, buf: &mut Buffer) {
+    // TODO: Add bath animation
 }
 
 fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
