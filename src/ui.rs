@@ -573,7 +573,7 @@ fn render_lights(_game: &Game, _area: Rect, _buf: &mut Buffer) {
     // TODO: Add something animated "in the dark"
 }
 
-fn render_bath(game: &Game, area: Rect, buf: &mut Buffer) {
+fn render_bath(_game: &Game, _area: Rect, _buf: &mut Buffer) {
     // TODO: Add bath animation
 }
 

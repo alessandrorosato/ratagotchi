@@ -32,6 +32,7 @@ pub struct Game {
     pub activity_ticks: usize,
     pub choice: Choice,
     pub stats_screen: RenderStats,
+    pub is_action_over: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -179,23 +180,32 @@ impl Game {
     }
 
     fn tick_increase(&mut self) {
+        let previous_activity_tick = self.activity_ticks;
         self.tick_progress += 1;
         self.activity_ticks = if self.activity_ticks > 0 {
             self.activity_ticks - 1
         } else {
             0
         };
+        if previous_activity_tick == 1 {
+            self.is_action_over = true;
+        }
     }
 
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
-        self.ratagotchi.hunger -= RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks;
-        self.ratagotchi.health -= RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks;
-        self.ratagotchi.happiness -=
-            RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks;
-        self.ratagotchi.discipline -=
-            RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks;
-        self.ratagotchi.poop += RATAGOTCHI_DECAY_FACTOR_POOP * ticks;
+        self.ratagotchi.hunger =
+            (self.ratagotchi.hunger - RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks).max(0.0);
+        self.ratagotchi.health =
+            (self.ratagotchi.health - RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks).max(0.0);
+        self.ratagotchi.happiness = (self.ratagotchi.happiness
+            - RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks)
+            .max(0.0);
+        self.ratagotchi.discipline = (self.ratagotchi.discipline
+            - RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks)
+            .max(0.0);
+        self.ratagotchi.poop =
+            (self.ratagotchi.poop + RATAGOTCHI_DECAY_FACTOR_POOP * ticks).min(100.0);
     }
 
     pub fn update_stats(&mut self) {
@@ -235,12 +245,10 @@ impl Game {
     }
 
     fn back_to_main(&mut self) {
-        if self.active_view == GameView::Bath
-            && self.highlighted_tab == GameView::Bath
-            && self.activity_ticks == 0
-        {
+        if self.is_action_over && self.activity_ticks == 0 {
             self.active_view = GameView::default();
             self.highlighted_tab = GameView::default();
+            self.is_action_over = false;
         }
     }
 
