@@ -126,7 +126,10 @@ impl Game {
                     self.do_action();
                 }
             }
-            KeyCode::Esc => self.set_view(GameView::Main),
+            KeyCode::Esc => {
+                self.set_view(GameView::Main);
+                self.highlighted_tab = GameView::Main;
+            }
             KeyCode::Up => self.change_choice(ChoiceDirection::Up),
             KeyCode::Down => self.change_choice(ChoiceDirection::Down),
             KeyCode::Right => {
@@ -153,14 +156,14 @@ impl Game {
             GameView::Bath => GameView::Health,
             GameView::Health => GameView::Scold,
             GameView::Scold => GameView::Attention,
-            GameView::Attention => GameView::Main,
+            GameView::Attention => GameView::Feed,
         };
     }
 
     fn prev_view(&mut self) {
         self.highlighted_tab = match self.highlighted_tab {
             GameView::Main => GameView::Attention,
-            GameView::Feed => GameView::Main,
+            GameView::Feed => GameView::Attention,
             GameView::Lights => GameView::Feed,
             GameView::Play => GameView::Lights,
             GameView::Medicine => GameView::Play,
