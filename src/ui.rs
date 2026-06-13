@@ -273,7 +273,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Bath => render_bath(game, main, buf),
         GameView::Health => render_health(game, main, buf),
         GameView::Scold => todo!(),
-        GameView::Attention => todo!(),
+        GameView::Attention => render_attention(game, main, buf),
     }
 }
 
@@ -380,8 +380,8 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 
 fn get_instructions(game: &Game) -> Line<'static> {
     Line::from(format!(
-        " <Tab> for menu navigation, <Enter> to trigger selected item - tick: {}, activity_ticks: {}, hunger: {:.3?} ",
-        game.tick_progress, game.activity_ticks, game.ratagotchi.hunger
+        " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {} ",
+        game.tick_progress, game.activity_ticks,
     ))
     .alignment(Alignment::Center)
 }
@@ -629,6 +629,56 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
         RenderStats::Happiness => {
             let bottom_row = render_stats_title(Line::from("Happiness"), area, buf);
             render_stats_hearts(game.ratagotchi.happiness, bottom_row, buf);
+        }
+    }
+}
+
+fn render_attention(game: &Game, area: Rect, buf: &mut Buffer) {
+    // Flash content
+    let should_render = game.tick_progress.is_multiple_of(2);
+
+    if should_render {
+        let mut low_values = vec![];
+
+        // Get low values
+        if game.ratagotchi.hunger < 20.0 {
+            low_values.push(Span::from("Low hunger"));
+        }
+        if game.ratagotchi.health < 20.0 {
+            low_values.push(Span::from("Low health"));
+        }
+        if game.ratagotchi.discipline < 20.0 {
+            low_values.push(Span::from("Low discipline"));
+        }
+        if game.ratagotchi.happiness < 20.0 {
+            low_values.push(Span::from("Low happiness"));
+        }
+
+        let (layout, text_size) = if low_values.len() < 3 {
+            // We need to stick to [Rect; 4], so we add two small rows at the bottom
+            let two_rows = Layout::vertical([
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Percentage(0),
+                Constraint::Percentage(0),
+            ]);
+            let block = Block::new();
+            (block.inner(area).layout(&two_rows), PixelSize::Full)
+        } else {
+            (two_by_two_layout(area), PixelSize::Quadrant)
+        };
+
+        for (i, value) in low_values.into_iter().enumerate() {
+            let inner_layout =
+                Layout::vertical([Constraint::Min(1), Constraint::Fill(1)]).split(layout[i]);
+
+            BigText::builder()
+                .pixel_size(text_size)
+                .style(Style::new().white())
+                .centered()
+                .lines([value.into()])
+                .build()
+                .render(inner_layout[1], buf);
         }
     }
 }
