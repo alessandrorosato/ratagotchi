@@ -33,6 +33,7 @@ pub struct Game {
     pub choice: Choice,
     pub stats_screen: RenderStats,
     pub is_action_over: bool,
+    pub is_dark: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -120,6 +121,8 @@ impl Game {
             KeyCode::Enter => {
                 if self.highlighted_tab == GameView::Bath {
                     self.do_action();
+                } else if self.highlighted_tab == GameView::Lights {
+                    self.is_dark = !self.is_dark;
                 } else if self.active_view != self.highlighted_tab {
                     self.change_view();
                 } else {

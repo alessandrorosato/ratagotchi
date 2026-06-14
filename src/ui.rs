@@ -267,7 +267,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     match game.active_view {
         GameView::Main => render_main(game, main, buf),
         GameView::Feed => render_feed(game, main, buf),
-        GameView::Lights => render_lights(game, main, buf),
+        GameView::Lights => render_main(game, main, buf),
         GameView::Play => todo!(),
         GameView::Medicine => todo!(),
         GameView::Bath => render_bath(game, main, buf),
@@ -467,37 +467,41 @@ fn render_stats_hearts(value: f32, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
-    let [left, center, right] = center_and_columns_layout(area);
-    self::render_image_as_paragraph(
-        "assets/ratagotchi-idle.gif".to_string(),
-        center,
-        VerticalPosition::Center,
-        Some(game.tick_progress % 2),
-    )
-    .centered()
-    .render(center, buf);
-
-    // Define the poop situation
-    if game.ratagotchi.poop >= 50. {
+    if game.is_dark {
+        // TODO: Add something animated "in the dark"
+    } else {
+        let [left, center, right] = center_and_columns_layout(area);
         self::render_image_as_paragraph(
-            "assets/poop.gif".to_string(),
-            left,
-            VerticalPosition::Bottom,
-            Some(game.tick_progress % 2),
-        )
-        .centered()
-        .render(left, buf);
-    }
-
-    if game.ratagotchi.poop >= 95. {
-        self::render_image_as_paragraph(
-            "assets/poop.gif".to_string(),
-            right,
+            "assets/ratagotchi-idle.gif".to_string(),
+            center,
             VerticalPosition::Center,
             Some(game.tick_progress % 2),
         )
         .centered()
-        .render(right, buf);
+        .render(center, buf);
+
+        // Define the poop situation
+        if game.ratagotchi.poop >= 50. {
+            self::render_image_as_paragraph(
+                "assets/poop.gif".to_string(),
+                left,
+                VerticalPosition::Bottom,
+                Some(game.tick_progress % 2),
+            )
+            .centered()
+            .render(left, buf);
+        }
+
+        if game.ratagotchi.poop >= 95. {
+            self::render_image_as_paragraph(
+                "assets/poop.gif".to_string(),
+                right,
+                VerticalPosition::Center,
+                Some(game.tick_progress % 2),
+            )
+            .centered()
+            .render(right, buf);
+        }
     }
 }
 
@@ -567,10 +571,6 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         .centered()
         .render(bottom_right, buf);
     }
-}
-
-fn render_lights(_game: &Game, _area: Rect, _buf: &mut Buffer) {
-    // TODO: Add something animated "in the dark"
 }
 
 fn render_bath(_game: &Game, _area: Rect, _buf: &mut Buffer) {
