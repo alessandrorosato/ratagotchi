@@ -259,18 +259,27 @@ impl Game {
     }
 
     fn do_action(&mut self) {
+        // Many actions impact the ratagotchi's happiness
         if self.active_view == GameView::Feed {
-            let hunger_restored = match self.choice {
-                Choice::Top => STAT_INCREASE_FOOD_CHEESE,
-                Choice::Bottom => STAT_INCREASE_FOOD_RATFOOD,
+            let (hunger_restored, happiness_restored) = match self.choice {
+                Choice::Top => (STAT_INCREASE_FOOD_CHEESE, 10.0),
+                Choice::Bottom => (STAT_INCREASE_FOOD_RATFOOD, 5.0),
             };
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
+            self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0)
         } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
             self.active_view = GameView::Bath;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.poop = 0.0;
-            // TOOD: Add some happiness after the bath
+            let happiness_restored = if self.ratagotchi.poop > 50.0 {
+                25.0
+            } else if self.ratagotchi.poop > 10.0 {
+                15.0
+            } else {
+                0.0
+            };
+            self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0)
         }
     }
 
