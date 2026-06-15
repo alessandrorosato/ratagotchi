@@ -62,7 +62,6 @@ impl Widget for ProgressBar {
                 .split(bar_layout[1]);
 
         let widget_area = if self.bordered {
-            // TODO: Change this to custom border
             let borderd_block = Block::bordered()
                 .border_set(symbols::border::Set {
                     top_left: "█",
