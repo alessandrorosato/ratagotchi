@@ -220,6 +220,18 @@ impl Game {
             (Utc::now() - self.ratagotchi.birth).as_seconds_f32() / RATAGOTCHI_AGE_CONVERSION_RATE;
     }
 
+    // TODO: This should change based on the ratagotchi health, fitness (to be implemented) and illness (to be implemented)
+    // The lower stats, the less efficient actions are (i.e. you need to stay on top of it if it's in a bad shape)
+    pub fn bonus_coefficient(&mut self) -> f32 {
+        1.0
+    }
+
+    // TODO: similarly to the above, "malus_coefficient" for decays and other similar effects
+    // The lower stats, the faster stats will decay (i.e. keeping the rat sick will precipitate the situation)
+    pub fn malus_coefficient(&mut self) -> f32 {
+        1.0
+    }
+
     fn next_state(&mut self, state: GameState) {
         self.state = state;
     }
@@ -259,11 +271,12 @@ impl Game {
     }
 
     fn do_action(&mut self) {
+        let bonus = self.bonus_coefficient();
         // Many actions impact the ratagotchi's happiness
         if self.active_view == GameView::Feed {
             let (hunger_restored, happiness_restored) = match self.choice {
-                Choice::Top => (STAT_INCREASE_FOOD_CHEESE, 10.0),
-                Choice::Bottom => (STAT_INCREASE_FOOD_RATFOOD, 5.0),
+                Choice::Top => (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus),
+                Choice::Bottom => (STAT_INCREASE_FOOD_RATFOOD, 5.0 * bonus),
             };
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
@@ -273,9 +286,9 @@ impl Game {
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.poop = 0.0;
             let happiness_restored = if self.ratagotchi.poop > 50.0 {
-                25.0
+                25.0 * bonus
             } else if self.ratagotchi.poop > 10.0 {
-                15.0
+                15.0 * bonus
             } else {
                 0.0
             };
