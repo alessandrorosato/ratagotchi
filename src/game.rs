@@ -13,10 +13,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{
-        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_AGE_CONVERSION_RATE,
-        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
-        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
-        RATAGOTCHI_DECAY_FACTOR_POOP, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
+        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
+        RATAGOTCHI_DECAY_FACTOR_HUNGER, RATAGOTCHI_DECAY_FACTOR_POOP, SECONDS_PER_DAY,
+        STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::{GameView, RenderStats},
 };
@@ -216,8 +216,16 @@ impl Game {
 
     pub fn update_stats(&mut self) {
         self.tick_decay(1.0);
-        self.ratagotchi.age =
-            (Utc::now() - self.ratagotchi.birth).as_seconds_f32() / RATAGOTCHI_AGE_CONVERSION_RATE;
+        let real_secs_delta = (Utc::now() - self.ratagotchi.birth).as_seconds_f32();
+        self.ratagotchi.age = Self::convert_secs_to_game_days(real_secs_delta);
+    }
+
+    // Conversion (real to simulated):
+    // * 8 hrs  -> 1 month
+    // * 4 days -> 1 year
+    pub fn convert_secs_to_game_days(real_secs: f32) -> f32 {
+        let days_per_second = 90.0 / SECONDS_PER_DAY;
+        real_secs * days_per_second
     }
 
     // TODO: This should change based on the ratagotchi health, fitness (to be implemented) and illness (to be implemented)
@@ -393,5 +401,29 @@ impl Default for Ratagotchi {
 impl Ratagotchi {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn print_age(&self) -> String {
+        if self.age < 1.0 {
+            "newborn".to_string()
+        } else if self.age < 30.0 {
+            format!(
+                "{} day{}",
+                self.age.floor(),
+                if self.age >= 2.0 { "s" } else { "" }
+            )
+        } else if self.age < 365.0 {
+            format!(
+                "{} mo{}",
+                (self.age / 30.0).floor(),
+                if self.age / 30.0 >= 2.0 { "s" } else { "" }
+            )
+        } else {
+            format!(
+                "{} yr{}",
+                (self.age / 365.0).floor(),
+                if self.age / 365.0 >= 2.0 { "s" } else { "" }
+            )
+        }
     }
 }

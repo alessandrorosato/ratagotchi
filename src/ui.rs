@@ -593,7 +593,7 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
                 .pixel_size(PixelSize::Full)
                 .style(Style::new().white())
                 .centered()
-                .lines([format!("{:.0} yr", game.ratagotchi.age).into()])
+                .lines([game.ratagotchi.print_age().into()])
                 .build()
                 .render(top_right, buf);
 

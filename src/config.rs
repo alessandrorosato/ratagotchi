@@ -5,9 +5,11 @@ pub const RATAGOTCHI_DECAY_FACTOR_HAPPINESS: f32 = 0.002;
 pub const RATAGOTCHI_DECAY_FACTOR_DISCIPLINE: f32 = 0.004;
 pub const RATAGOTCHI_DECAY_FACTOR_POOP: f32 = 0.0025;
 pub const RATAGOTCHI_ACTIVITY_DURATION: usize = 8;
-pub const RATAGOTCHI_AGE_CONVERSION_RATE: f32 = 86400.0; // One IRL day is one ratagotchi year
 
 // Game
 pub const GAME_AUTOSAVE_FREQUENCY: usize = 10; // Ticks between autosaves.
 pub const STAT_INCREASE_FOOD_CHEESE: f32 = 30.0;
 pub const STAT_INCREASE_FOOD_RATFOOD: f32 = 45.0;
+
+// Misc
+pub const SECONDS_PER_DAY: f32 = 86400.0;
