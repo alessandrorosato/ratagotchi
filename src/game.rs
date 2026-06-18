@@ -43,6 +43,7 @@ pub struct Ratagotchi {
     pub health: f32,
     pub happiness: f32,
     pub discipline: f32,
+    birth_weight: f32,
     pub weight: f32,
     pub poop: f32,
     pub birth: DateTime<Utc>,
@@ -219,6 +220,7 @@ impl Game {
         self.tick_decay(1.0);
         let real_secs_delta = (Utc::now() - self.ratagotchi.birth).as_seconds_f32();
         self.ratagotchi.age = Self::convert_secs_to_game_days(real_secs_delta);
+        self.ratagotchi.update_weight();
     }
 
     // Conversion (real to simulated):
@@ -340,6 +342,7 @@ impl Game {
             }
         }
     }
+
     fn load(&mut self) {
         match self.get_storage_folder() {
             Ok(f) => {
@@ -386,12 +389,14 @@ pub fn tick_lapse(tx: mpsc::Sender<Trigger>) {
 
 impl Default for Ratagotchi {
     fn default() -> Self {
+        let birth_weight = Self::starting_weight();
         Ratagotchi {
             hunger: 100.0,
             health: 100.0,
             happiness: 100.0,
             discipline: 100.0,
-            weight: Self::starting_weight(),
+            birth_weight,
+            weight: birth_weight,
             poop: 0.0,
             birth: Utc::now(),
             age: 0.0,
@@ -438,5 +443,25 @@ impl Ratagotchi {
 
     fn starting_weight() -> f32 {
         rand::random_range(RATAGOTCHI_BIRTH_WEIGHT_RANGE.0..=RATAGOTCHI_BIRTH_WEIGHT_RANGE.1)
+    }
+
+    // Key Milestone Weights
+    // * Birth: 5 to 8 grams (saved in birth_weight) up to 50g
+    // * Juvenile (1 to 8 months): from 50g to 200g
+    // * Adult (8 months onwards): up to 450g
+    fn update_weight(&mut self) {
+        let milestone_months = (1.0, 8.0);
+        let milestone_weights = (50.0, 200.0, 450.0);
+        let months = self.age / 30.0;
+        self.weight = if months <= milestone_months.0 {
+            self.birth_weight + months * (milestone_weights.0 - self.birth_weight)
+        } else if months <= milestone_months.1 {
+            milestone_weights.0 + months * (milestone_weights.1 - milestone_weights.0)
+        } else {
+            let exp_growth_rate = 0.5;
+            let remaining_growth = milestone_weights.2 - milestone_weights.1;
+            milestone_weights.2
+                - (remaining_growth * (-exp_growth_rate * months - milestone_months.1)).exp()
+        };
     }
 }
