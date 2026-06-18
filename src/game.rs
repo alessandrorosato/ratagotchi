@@ -13,10 +13,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{
-        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
-        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
-        RATAGOTCHI_DECAY_FACTOR_HUNGER, RATAGOTCHI_DECAY_FACTOR_POOP, SECONDS_PER_DAY,
-        STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BIRTH_WEIGHT_RANGE,
+        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
+        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
+        RATAGOTCHI_DECAY_FACTOR_POOP, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::{GameView, RenderStats},
 };
@@ -390,7 +391,7 @@ impl Default for Ratagotchi {
             health: 100.0,
             happiness: 100.0,
             discipline: 100.0,
-            weight: 1.0,
+            weight: Self::starting_weight(),
             poop: 0.0,
             birth: Utc::now(),
             age: 0.0,
@@ -425,5 +426,17 @@ impl Ratagotchi {
                 if self.age / 365.0 >= 2.0 { "s" } else { "" }
             )
         }
+    }
+
+    pub fn print_weight(&self) -> String {
+        if self.weight < 10.0 {
+            format!("{:.1} g", self.weight)
+        } else {
+            format!("{} g", self.weight.round())
+        }
+    }
+
+    fn starting_weight() -> f32 {
+        rand::random_range(RATAGOTCHI_BIRTH_WEIGHT_RANGE.0..=RATAGOTCHI_BIRTH_WEIGHT_RANGE.1)
     }
 }

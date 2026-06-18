@@ -609,7 +609,7 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
                 .pixel_size(PixelSize::Full)
                 .style(Style::new().white())
                 .centered()
-                .lines([format!("{:.} kg", game.ratagotchi.weight).into()])
+                .lines([game.ratagotchi.print_weight().into()])
                 .build()
                 .render(bottom_right, buf);
         }

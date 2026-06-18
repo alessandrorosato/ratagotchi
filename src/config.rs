@@ -5,6 +5,7 @@ pub const RATAGOTCHI_DECAY_FACTOR_HAPPINESS: f32 = 0.002;
 pub const RATAGOTCHI_DECAY_FACTOR_DISCIPLINE: f32 = 0.004;
 pub const RATAGOTCHI_DECAY_FACTOR_POOP: f32 = 0.0025;
 pub const RATAGOTCHI_ACTIVITY_DURATION: usize = 8;
+pub const RATAGOTCHI_BIRTH_WEIGHT_RANGE: (f32, f32) = (5.0, 8.0);
 
 // Game
 pub const GAME_AUTOSAVE_FREQUENCY: usize = 10; // Ticks between autosaves.
