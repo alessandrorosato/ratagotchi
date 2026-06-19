@@ -302,16 +302,13 @@ impl Game {
 
     fn do_action(&mut self) {
         let bonus = self.bonus_coefficient();
-        // Many actions impact the ratagotchi's happiness
         if self.active_view == GameView::Feed {
             let (hunger_restored, happiness_restored, fitness_variation) = match self.choice {
                 Choice::Top => {
                     let fitness_variation = if self.ratagotchi.hunger > 95.0 {
                         FitnessChange::Spike
-                    } else if self.ratagotchi.fitness.value > 80.0 {
-                        FitnessChange::Up
                     } else {
-                        FitnessChange::None
+                        FitnessChange::Up
                     };
                     (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus, fitness_variation)
                 }
