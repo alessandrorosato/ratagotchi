@@ -16,8 +16,8 @@ use crate::{
         GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BIRTH_WEIGHT_RANGE,
         RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
         RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
-        RATAGOTCHI_DECAY_FACTOR_POOP, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
-        STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_FITNESS_DECAY_INTERVAL, SECONDS_PER_DAY,
+        STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::{GameView, RenderStats},
 };
@@ -45,7 +45,7 @@ pub struct Ratagotchi {
     pub discipline: f32,
     birth_weight: f32,
     pub weight: f32,
-    fitness: f32,
+    fitness: Fitness,
     pub poop: f32,
     pub birth: DateTime<Utc>,
     pub age: f32,
@@ -73,7 +73,13 @@ pub enum ChoiceDirection {
     Down,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Serialize, Deserialize)]
+struct Fitness {
+    value: f32,
+    last_update: DateTime<Utc>,
+}
+
+#[derive(PartialEq)]
 enum FitnessChange {
     Drop,
     Down,
@@ -101,6 +107,9 @@ impl Game {
                         Trigger::Input(key_event) => self.handle_key_event(key_event),
                         Trigger::Tick => {
                             self.update_stats();
+                            self.ratagotchi.fitness_decay(
+                                (self.ratagotchi.fitness.last_update - Utc::now()).as_seconds_f32(),
+                            );
                             self.tick_increase();
                             self.back_to_main();
                         }
@@ -299,7 +308,7 @@ impl Game {
                 Choice::Top => {
                     let fitness_variation = if self.ratagotchi.hunger > 95.0 {
                         FitnessChange::Spike
-                    } else if self.ratagotchi.fitness > 80.0 {
+                    } else if self.ratagotchi.fitness.value > 80.0 {
                         FitnessChange::Up
                     } else {
                         FitnessChange::None
@@ -318,7 +327,7 @@ impl Game {
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
             self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0);
-            self.ratagotchi.update_fitness(fitness_variation);
+            self.ratagotchi.update_fitness(fitness_variation, 1);
         } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
             self.active_view = GameView::Bath;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
@@ -391,6 +400,7 @@ impl Game {
         let time_delta = (Utc::now() - self.ratagotchi.last_update).as_seconds_f32();
         let ticks_delta = time_delta * 2.0;
         self.tick_decay(ticks_delta);
+        self.ratagotchi.fitness_decay(time_delta);
     }
 }
 
@@ -424,7 +434,10 @@ impl Default for Ratagotchi {
             discipline: 100.0,
             birth_weight,
             weight: birth_weight,
-            fitness: 1.0,
+            fitness: Fitness {
+                value: 1.0,
+                last_update: Utc::now(),
+            },
             poop: 0.0,
             birth: Utc::now(),
             age: 0.0,
@@ -493,10 +506,10 @@ impl Ratagotchi {
                 - (remaining_growth * (-exp_growth_rate * months - milestone_months.1)).exp()
         };
 
-        self.weight = weight * self.fitness;
+        self.weight = weight * self.fitness.value;
     }
 
-    fn update_fitness(&mut self, variation: FitnessChange) {
+    fn update_fitness(&mut self, variation: FitnessChange, multiplier: usize) {
         let fitness_variation = match variation {
             FitnessChange::Drop => -0.2,
             FitnessChange::Down => -0.05,
@@ -504,6 +517,13 @@ impl Ratagotchi {
             FitnessChange::Up => 0.05,
             FitnessChange::Spike => 0.2,
         };
-        self.fitness = (self.fitness + fitness_variation).clamp(0.5, 1.5);
+        self.fitness.value =
+            (self.fitness.value + fitness_variation * multiplier as f32).clamp(0.5, 1.5);
+        self.fitness.last_update = Utc::now();
+    }
+
+    fn fitness_decay(&mut self, time_delta: f32) {
+        let num_fitness_decays = (time_delta / RATAGOTCHI_FITNESS_DECAY_INTERVAL).floor() as usize;
+        self.update_fitness(FitnessChange::Down, num_fitness_decays);
     }
 }

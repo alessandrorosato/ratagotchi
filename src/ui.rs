@@ -381,7 +381,7 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 fn get_instructions(game: &Game) -> Line<'static> {
     Line::from(format!(
         " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {} ",
-        game.tick_progress, game.activity_ticks,
+        game.tick_progress, game.activity_ticks
     ))
     .alignment(Alignment::Center)
 }
