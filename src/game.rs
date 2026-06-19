@@ -45,6 +45,7 @@ pub struct Ratagotchi {
     pub discipline: f32,
     birth_weight: f32,
     pub weight: f32,
+    fitness: f32,
     pub poop: f32,
     pub birth: DateTime<Utc>,
     pub age: f32,
@@ -70,6 +71,15 @@ pub enum Choice {
 pub enum ChoiceDirection {
     Up,
     Down,
+}
+
+#[derive(Debug, PartialEq)]
+enum FitnessChange {
+    Drop,
+    Down,
+    None,
+    Up,
+    Spike,
 }
 
 impl Game {
@@ -285,13 +295,30 @@ impl Game {
         let bonus = self.bonus_coefficient();
         // Many actions impact the ratagotchi's happiness
         if self.active_view == GameView::Feed {
-            let (hunger_restored, happiness_restored) = match self.choice {
-                Choice::Top => (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus),
-                Choice::Bottom => (STAT_INCREASE_FOOD_RATFOOD, 5.0 * bonus),
+            let (hunger_restored, happiness_restored, fitness_variation) = match self.choice {
+                Choice::Top => {
+                    let fitness_variation = if self.ratagotchi.hunger > 95.0 {
+                        FitnessChange::Spike
+                    } else if self.ratagotchi.fitness > 80.0 {
+                        FitnessChange::Up
+                    } else {
+                        FitnessChange::None
+                    };
+                    (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus, fitness_variation)
+                }
+                Choice::Bottom => {
+                    let fitness_variation = if self.ratagotchi.hunger > 90.0 {
+                        FitnessChange::Up
+                    } else {
+                        FitnessChange::None
+                    };
+                    (STAT_INCREASE_FOOD_RATFOOD, 5.0 * bonus, fitness_variation)
+                }
             };
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
-            self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0)
+            self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0);
+            self.ratagotchi.update_fitness(fitness_variation);
         } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
             self.active_view = GameView::Bath;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
@@ -397,6 +424,7 @@ impl Default for Ratagotchi {
             discipline: 100.0,
             birth_weight,
             weight: birth_weight,
+            fitness: 1.0,
             poop: 0.0,
             birth: Utc::now(),
             age: 0.0,
@@ -404,6 +432,7 @@ impl Default for Ratagotchi {
         }
     }
 }
+
 impl Ratagotchi {
     pub fn new() -> Self {
         Default::default()
@@ -453,7 +482,7 @@ impl Ratagotchi {
         let milestone_months = (1.0, 8.0);
         let milestone_weights = (50.0, 200.0, 450.0);
         let months = self.age / 30.0;
-        self.weight = if months <= milestone_months.0 {
+        let weight = if months <= milestone_months.0 {
             self.birth_weight + months * (milestone_weights.0 - self.birth_weight)
         } else if months <= milestone_months.1 {
             milestone_weights.0 + months * (milestone_weights.1 - milestone_weights.0)
@@ -463,5 +492,18 @@ impl Ratagotchi {
             milestone_weights.2
                 - (remaining_growth * (-exp_growth_rate * months - milestone_months.1)).exp()
         };
+
+        self.weight = weight * self.fitness;
+    }
+
+    fn update_fitness(&mut self, variation: FitnessChange) {
+        let fitness_variation = match variation {
+            FitnessChange::Drop => -0.2,
+            FitnessChange::Down => -0.05,
+            FitnessChange::None => 0.0,
+            FitnessChange::Up => 0.05,
+            FitnessChange::Spike => 0.2,
+        };
+        self.fitness = (self.fitness + fitness_variation).clamp(0.5, 1.5);
     }
 }
