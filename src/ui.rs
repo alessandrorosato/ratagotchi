@@ -605,13 +605,23 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
             )
             .centered()
             .render(bottom_left, buf);
+            let two_rows = Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]);
+            let weight_block = Block::new();
+            let [upper, lower] = weight_block.inner(bottom_right).layout(&two_rows);
             BigText::builder()
                 .pixel_size(PixelSize::Full)
                 .style(Style::new().white())
                 .centered()
                 .lines([game.ratagotchi.print_weight().into()])
                 .build()
-                .render(bottom_right, buf);
+                .render(upper, buf);
+            BigText::builder()
+                .pixel_size(PixelSize::Quadrant)
+                .style(Style::new().white())
+                .centered()
+                .lines([game.ratagotchi.print_fitness().into()])
+                .build()
+                .render(lower, buf);
         }
         RenderStats::Discipline => {
             let bottom_row = render_stats_title(Line::from("Discipline"), area, buf);
