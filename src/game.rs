@@ -473,18 +473,22 @@ impl Ratagotchi {
     }
 
     pub fn print_weight(&self) -> String {
-        let fitness_icon = if self.fitness.value < 0.75 {
-            "v" // TODO: "↓" not supported by tui_bit_text, find a nicer solution or just change how fitness value is shown
+        if self.weight < 10.0 {
+            format!("{:.1} g", self.weight)
+        } else {
+            format!("{} g", self.weight.round())
+        }
+    }
+
+    pub fn print_fitness(&self) -> String {
+        let fitness = if self.fitness.value < 0.75 {
+            "(skinny)" // TODO: "↓" not supported by tui_bit_text, find a nicer solution or just change how fitness value is shown
         } else if self.fitness.value > 1.25 {
-            "^" // "↑" not supported
+            "(chonky)" // "↑" not supported
         } else {
             ""
         };
-        if self.weight < 10.0 {
-            format!("{:.1} g {}", self.weight, fitness_icon)
-        } else {
-            format!("{} g {}", self.weight.round(), fitness_icon)
-        }
+        fitness.to_string()
     }
 
     fn starting_weight() -> f32 {
