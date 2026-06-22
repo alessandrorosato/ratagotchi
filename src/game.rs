@@ -482,7 +482,7 @@ impl Ratagotchi {
 
     pub fn print_fitness(&self) -> String {
         let fitness = if self.fitness.value < 0.75 {
-            "(skinny)" // TODO: "↓" not supported by tui_bit_text, find a nicer solution or just change how fitness value is shown
+            "(scrawny)" // TODO: "↓" not supported by tui_bit_text, find a nicer solution or just change how fitness value is shown
         } else if self.fitness.value > 1.25 {
             "(chonky)" // "↑" not supported
         } else {
