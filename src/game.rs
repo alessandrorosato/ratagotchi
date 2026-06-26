@@ -81,7 +81,7 @@ struct Fitness {
 
 #[derive(PartialEq)]
 enum FitnessChange {
-    Drop,
+    // TODO: Maybe let's change this to a Struct with a value and use constants
     Down,
     None,
     Up,
@@ -521,7 +521,6 @@ impl Ratagotchi {
 
     fn update_fitness(&mut self, variation: FitnessChange, multiplier: usize) {
         let fitness_variation = match variation {
-            FitnessChange::Drop => -0.2,
             FitnessChange::Down => -0.05,
             FitnessChange::None => 0.0,
             FitnessChange::Up => 0.05,
