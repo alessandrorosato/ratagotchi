@@ -79,14 +79,7 @@ struct Fitness {
     last_update: DateTime<Utc>,
 }
 
-#[derive(PartialEq)]
-enum FitnessChange {
-    // TODO: Maybe let's change this to a Struct with a value and use constants
-    Down,
-    None,
-    Up,
-    Spike,
-}
+struct FitnessChange(f32);
 
 impl Game {
     pub fn run(
@@ -306,17 +299,17 @@ impl Game {
             let (hunger_restored, happiness_restored, fitness_variation) = match self.choice {
                 Choice::Top => {
                     let fitness_variation = if self.ratagotchi.hunger > 95.0 {
-                        FitnessChange::Spike
+                        FitnessChange(0.2)
                     } else {
-                        FitnessChange::Up
+                        FitnessChange(0.05)
                     };
                     (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus, fitness_variation)
                 }
                 Choice::Bottom => {
                     let fitness_variation = if self.ratagotchi.hunger > 90.0 {
-                        FitnessChange::Up
+                        FitnessChange(0.05)
                     } else {
-                        FitnessChange::None
+                        FitnessChange(0.0)
                     };
                     (STAT_INCREASE_FOOD_RATFOOD, 5.0 * bonus, fitness_variation)
                 }
@@ -520,19 +513,12 @@ impl Ratagotchi {
     }
 
     fn update_fitness(&mut self, variation: FitnessChange, multiplier: usize) {
-        let fitness_variation = match variation {
-            FitnessChange::Down => -0.05,
-            FitnessChange::None => 0.0,
-            FitnessChange::Up => 0.05,
-            FitnessChange::Spike => 0.2,
-        };
-        self.fitness.value =
-            (self.fitness.value + fitness_variation * multiplier as f32).clamp(0.5, 1.5);
+        self.fitness.value = (self.fitness.value + variation.0 * multiplier as f32).clamp(0.5, 1.5);
         self.fitness.last_update = Utc::now();
     }
 
     fn fitness_decay(&mut self, time_delta: f32) {
         let num_fitness_decays = (time_delta / RATAGOTCHI_FITNESS_DECAY_INTERVAL).floor() as usize;
-        self.update_fitness(FitnessChange::Down, num_fitness_decays);
+        self.update_fitness(FitnessChange(-0.05), num_fitness_decays);
     }
 }
