@@ -17,8 +17,8 @@ use crate::{
         RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
         RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
         RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
-        RATAGOTCHI_FITNESS_DECAY_INTERVAL, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
-        STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
+        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::{GameView, RenderStats},
 };
@@ -215,18 +215,18 @@ impl Game {
 
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
-        self.ratagotchi.hunger =
-            (self.ratagotchi.hunger - RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks).max(0.0);
-        self.ratagotchi.health =
-            (self.ratagotchi.health - RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks).max(0.0);
+        self.ratagotchi.hunger = (self.ratagotchi.hunger - RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks)
+            .max(RATAGOTCHI_STAT_MIN_VALUE);
+        self.ratagotchi.health = (self.ratagotchi.health - RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks)
+            .max(RATAGOTCHI_STAT_MIN_VALUE);
         self.ratagotchi.happiness = (self.ratagotchi.happiness
             - RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks)
-            .max(0.0);
+            .max(RATAGOTCHI_STAT_MIN_VALUE);
         self.ratagotchi.discipline = (self.ratagotchi.discipline
             - RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks)
-            .max(0.0);
-        self.ratagotchi.poop =
-            (self.ratagotchi.poop + RATAGOTCHI_DECAY_FACTOR_POOP * ticks).min(100.0);
+            .max(RATAGOTCHI_STAT_MIN_VALUE);
+        self.ratagotchi.poop = (self.ratagotchi.poop + RATAGOTCHI_DECAY_FACTOR_POOP * ticks)
+            .min(RATAGOTCHI_STAT_MAX_VALUE);
     }
 
     pub fn update_stats(&mut self) {
@@ -316,13 +316,15 @@ impl Game {
                 }
             };
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
-            self.ratagotchi.hunger = (self.ratagotchi.hunger + hunger_restored).min(100.0);
-            self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0);
+            self.ratagotchi.hunger =
+                (self.ratagotchi.hunger + hunger_restored).min(RATAGOTCHI_STAT_MAX_VALUE);
+            self.ratagotchi.happiness =
+                (self.ratagotchi.happiness + happiness_restored).min(RATAGOTCHI_STAT_MAX_VALUE);
             self.ratagotchi.update_fitness(fitness_variation, 1);
         } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
             self.active_view = GameView::Bath;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
-            self.ratagotchi.poop = 0.0;
+            self.ratagotchi.poop = RATAGOTCHI_STAT_MIN_VALUE;
             let happiness_restored = if self.ratagotchi.poop > 50.0 {
                 25.0 * bonus
             } else if self.ratagotchi.poop > 10.0 {
@@ -330,7 +332,8 @@ impl Game {
             } else {
                 0.0
             };
-            self.ratagotchi.happiness = (self.ratagotchi.happiness + happiness_restored).min(100.0)
+            self.ratagotchi.happiness =
+                (self.ratagotchi.happiness + happiness_restored).min(RATAGOTCHI_STAT_MAX_VALUE)
         }
     }
 
@@ -419,19 +422,19 @@ impl Default for Ratagotchi {
     fn default() -> Self {
         let birth_weight = Self::starting_weight();
         Ratagotchi {
-            hunger: 100.0,
-            health: 100.0,
-            happiness: 100.0,
-            discipline: 100.0,
+            hunger: RATAGOTCHI_STAT_MAX_VALUE,
+            health: RATAGOTCHI_STAT_MAX_VALUE,
+            happiness: RATAGOTCHI_STAT_MAX_VALUE,
+            discipline: RATAGOTCHI_STAT_MAX_VALUE,
             birth_weight,
             weight: birth_weight,
             fitness: Fitness {
                 value: 1.0,
                 last_update: Utc::now(),
             },
-            poop: 0.0,
+            poop: RATAGOTCHI_STAT_MIN_VALUE,
             birth: Utc::now(),
-            age: 0.0,
+            age: RATAGOTCHI_STAT_MIN_VALUE,
             last_update: Utc::now(),
         }
     }

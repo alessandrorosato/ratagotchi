@@ -9,6 +9,8 @@ pub const RATAGOTCHI_ACTIVITY_DURATION: usize = 8;
 pub const RATAGOTCHI_BIRTH_WEIGHT_RANGE: (f32, f32) = (5.0, 8.0);
 pub const RATAGOTCHI_FITNESS_CHANGE_S: f32 = 0.05;
 pub const RATAGOTCHI_FITNESS_CHANGE_L: f32 = 0.2;
+pub const RATAGOTCHI_STAT_MAX_VALUE: f32 = 100.0;
+pub const RATAGOTCHI_STAT_MIN_VALUE: f32 = 0.0;
 
 // Game
 pub const GAME_AUTOSAVE_FREQUENCY: usize = 10; // Ticks between autosaves.
