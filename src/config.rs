@@ -7,6 +7,8 @@ pub const RATAGOTCHI_DECAY_FACTOR_POOP: f32 = 0.0025;
 pub const RATAGOTCHI_FITNESS_DECAY_INTERVAL: f32 = 21600.0; // Every 6 hours
 pub const RATAGOTCHI_ACTIVITY_DURATION: usize = 8;
 pub const RATAGOTCHI_BIRTH_WEIGHT_RANGE: (f32, f32) = (5.0, 8.0);
+pub const RATAGOTCHI_FITNESS_CHANGE_S: f32 = 0.05;
+pub const RATAGOTCHI_FITNESS_CHANGE_L: f32 = 0.2;
 
 // Game
 pub const GAME_AUTOSAVE_FREQUENCY: usize = 10; // Ticks between autosaves.

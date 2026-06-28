@@ -16,8 +16,9 @@ use crate::{
         GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BIRTH_WEIGHT_RANGE,
         RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
         RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
-        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_FITNESS_DECAY_INTERVAL, SECONDS_PER_DAY,
-        STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
+        RATAGOTCHI_FITNESS_DECAY_INTERVAL, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
     ui::{GameView, RenderStats},
 };
@@ -299,15 +300,15 @@ impl Game {
             let (hunger_restored, happiness_restored, fitness_variation) = match self.choice {
                 Choice::Top => {
                     let fitness_variation = if self.ratagotchi.hunger > 95.0 {
-                        FitnessChange(0.2)
+                        FitnessChange(RATAGOTCHI_FITNESS_CHANGE_L)
                     } else {
-                        FitnessChange(0.05)
+                        FitnessChange(RATAGOTCHI_FITNESS_CHANGE_S)
                     };
                     (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus, fitness_variation)
                 }
                 Choice::Bottom => {
                     let fitness_variation = if self.ratagotchi.hunger > 90.0 {
-                        FitnessChange(0.05)
+                        FitnessChange(RATAGOTCHI_FITNESS_CHANGE_S)
                     } else {
                         FitnessChange(0.0)
                     };
@@ -519,6 +520,9 @@ impl Ratagotchi {
 
     fn fitness_decay(&mut self, time_delta: f32) {
         let num_fitness_decays = (time_delta / RATAGOTCHI_FITNESS_DECAY_INTERVAL).floor() as usize;
-        self.update_fitness(FitnessChange(-0.05), num_fitness_decays);
+        self.update_fitness(
+            FitnessChange(-RATAGOTCHI_FITNESS_CHANGE_S),
+            num_fitness_decays,
+        );
     }
 }
