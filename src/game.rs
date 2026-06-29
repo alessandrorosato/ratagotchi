@@ -134,7 +134,7 @@ impl Game {
             KeyCode::Tab => self.next_view(),
             KeyCode::BackTab => self.prev_view(),
             KeyCode::Enter => {
-                if self.highlighted_tab == GameView::Bath {
+                if matches!(self.highlighted_tab, GameView::Bath | GameView::Medicine) {
                     self.do_action();
                 } else if self.highlighted_tab == GameView::Lights {
                     self.is_dark = !self.is_dark;
@@ -334,6 +334,12 @@ impl Game {
             };
             self.ratagotchi.happiness =
                 (self.ratagotchi.happiness + happiness_restored).min(RATAGOTCHI_STAT_MAX_VALUE)
+        } else if self.highlighted_tab == GameView::Medicine
+            && self.active_view != GameView::Medicine
+        {
+            self.active_view = GameView::Medicine;
+            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
+            self.ratagotchi.health += 60.0;
         }
     }
 

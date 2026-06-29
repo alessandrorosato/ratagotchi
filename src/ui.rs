@@ -269,7 +269,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Feed => render_feed(game, main, buf),
         GameView::Lights => render_main(game, main, buf),
         GameView::Play => todo!(),
-        GameView::Medicine => todo!(),
+        GameView::Medicine => render_medicine(game, main, buf),
         GameView::Bath => render_bath(game, main, buf),
         GameView::Health => render_health(game, main, buf),
         GameView::Scold => todo!(),
@@ -571,6 +571,18 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         .centered()
         .render(bottom_right, buf);
     }
+}
+
+fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {
+    let frame = if game.activity_ticks > 5 { 0 } else { 1 };
+    self::render_image_as_paragraph(
+        "assets/ratagotchi-medicine.gif".to_string(),
+        area,
+        VerticalPosition::Center,
+        Some(frame),
+    )
+    .centered()
+    .render(area, buf);
 }
 
 fn render_bath(_game: &Game, _area: Rect, _buf: &mut Buffer) {
