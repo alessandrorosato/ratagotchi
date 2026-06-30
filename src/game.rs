@@ -134,7 +134,7 @@ impl Game {
             KeyCode::Tab => self.next_view(),
             KeyCode::BackTab => self.prev_view(),
             KeyCode::Enter => {
-                if matches!(self.highlighted_tab, GameView::Bath | GameView::Medicine) {
+                if self.jump_to_action() {
                     self.do_action();
                 } else if self.highlighted_tab == GameView::Lights {
                     self.is_dark = !self.is_dark;
@@ -211,6 +211,13 @@ impl Game {
         if previous_activity_tick == 1 {
             self.is_action_over = true;
         }
+    }
+
+    fn jump_to_action(&self) -> bool {
+        if matches!(self.highlighted_tab, GameView::Bath | GameView::Medicine) {
+            return true;
+        }
+        false
     }
 
     // TODO: I just threw random factors here, it probably needs a second look
