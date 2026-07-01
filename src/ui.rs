@@ -272,7 +272,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Medicine => render_medicine(game, main, buf),
         GameView::Bath => render_bath(game, main, buf),
         GameView::Health => render_health(game, main, buf),
-        GameView::Scold => todo!(),
+        GameView::Scold => render_scold(game, main, buf),
         GameView::Attention => render_attention(game, main, buf),
     }
 }
@@ -653,6 +653,22 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
             render_stats_hearts(game.ratagotchi.happiness, bottom_row, buf);
         }
     }
+}
+
+fn render_scold(game: &Game, area: Rect, buf: &mut Buffer) {
+    let frame = if game.activity_ticks.is_multiple_of(2) {
+        0
+    } else {
+        1
+    };
+    self::render_image_as_paragraph(
+        "assets/ratagotchi-scold.gif".to_string(),
+        area,
+        VerticalPosition::Center,
+        Some(frame),
+    )
+    .centered()
+    .render(area, buf);
 }
 
 fn render_attention(game: &Game, area: Rect, buf: &mut Buffer) {

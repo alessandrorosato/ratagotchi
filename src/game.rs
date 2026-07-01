@@ -214,7 +214,10 @@ impl Game {
     }
 
     fn jump_to_action(&self) -> bool {
-        if matches!(self.highlighted_tab, GameView::Bath | GameView::Medicine) {
+        if matches!(
+            self.highlighted_tab,
+            GameView::Bath | GameView::Medicine | GameView::Scold
+        ) {
             return true;
         }
         false
@@ -227,10 +230,12 @@ impl Game {
         self.ratagotchi.health = (self.ratagotchi.health - RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks)
             .max(RATAGOTCHI_STAT_MIN_VALUE);
         self.ratagotchi.happiness = (self.ratagotchi.happiness
-            - RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger) * ticks)
+            - RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger).min(50.) * ticks)
             .max(RATAGOTCHI_STAT_MIN_VALUE);
         self.ratagotchi.discipline = (self.ratagotchi.discipline
-            - RATAGOTCHI_DECAY_FACTOR_DISCIPLINE * (100. / self.ratagotchi.happiness) * ticks)
+            - RATAGOTCHI_DECAY_FACTOR_DISCIPLINE
+                * (100. / self.ratagotchi.happiness).min(50.)
+                * ticks)
             .max(RATAGOTCHI_STAT_MIN_VALUE);
         self.ratagotchi.poop = (self.ratagotchi.poop + RATAGOTCHI_DECAY_FACTOR_POOP * ticks)
             .min(RATAGOTCHI_STAT_MAX_VALUE);
@@ -347,6 +352,10 @@ impl Game {
             self.active_view = GameView::Medicine;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.health += 60.0;
+        } else if self.highlighted_tab == GameView::Scold && self.active_view != GameView::Scold {
+            self.active_view = GameView::Scold;
+            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
+            self.ratagotchi.discipline += 40.0;
         }
     }
 
