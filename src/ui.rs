@@ -1,4 +1,4 @@
-use std::{fmt, fs::File, io::BufReader};
+use std::{fmt, fs::File, io::BufReader, path::Path};
 
 use chrono::Utc;
 use image::{AnimationDecoder, ImageReader, RgbaImage, codecs::gif::GifDecoder};
@@ -13,6 +13,7 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 
 use crate::{
+    config::RATAGOTCHI_ACTIVITY_DURATION,
     game::{Choice, Game},
     widgets::ProgressBar,
 };
@@ -340,6 +341,109 @@ fn render_image_as_paragraph(
         .centered()
 }
 
+fn render_wave_over_image(
+    image_path: String,
+    wave_path: String,
+    area: Rect,
+    vertical_position: VerticalPosition,
+    frame: Option<usize>,
+    activity_tick: usize,
+    buf: &mut Buffer,
+) {
+    let mut line_imgs = Vec::new();
+    for path in [image_path, wave_path].iter() {
+        let rgba_img = match frame {
+            Some(f) => {
+                if Path::new(&path).extension().and_then(|ext| ext.to_str()) == Some("gif") {
+                    let file = File::open(path).unwrap();
+                    let reader = BufReader::new(file);
+                    let decoder = GifDecoder::new(reader).unwrap();
+                    let mut frames = decoder.into_frames();
+                    let frame = frames.nth(f);
+
+                    frame.unwrap().unwrap().into_buffer()
+                } else {
+                    let image_reader = match ImageReader::open(path.to_lowercase()) {
+                        Ok(r) => r,
+                        Err(_) => panic!("Can't find asset: {}", path.to_lowercase()),
+                    };
+
+                    image_reader.decode().unwrap().into_rgba8()
+                }
+            }
+            None => {
+                let image_reader = match ImageReader::open(path.to_lowercase()) {
+                    Ok(r) => r,
+                    Err(_) => panic!("Can't find asset: {}", path.to_lowercase()),
+                };
+
+                image_reader.decode().unwrap().into_rgba8()
+            }
+        };
+
+        let lines = img_to_lines(&rgba_img);
+
+        line_imgs.push(lines);
+    }
+
+    let max_line_len = line_imgs.iter().map(|l| l.len()).max().unwrap_or(0);
+
+    let image_padding = match vertical_position {
+        VerticalPosition::Center => {
+            let area_height = if area.height > 2 {
+                area.height - 2
+            } else {
+                area.height
+            } as usize;
+            let line_count = max_line_len;
+            let top_padding = if area_height > line_count {
+                (area_height - line_count) / 2
+            } else {
+                0
+            };
+            Padding::top(top_padding as u16)
+        }
+        VerticalPosition::Bottom => {
+            let area_height = if area.height > 2 {
+                area.height - 2
+            } else {
+                area.height
+            } as usize;
+            let line_count = max_line_len;
+            let top_padding = area_height.saturating_sub(line_count);
+            Padding::top(top_padding as u16)
+        }
+    };
+
+    let wave_position_index = activity_tick.abs_diff(4);
+    let wave_position_h =
+        area.width / (RATAGOTCHI_ACTIVITY_DURATION - 4) as u16 * wave_position_index as u16;
+    let wave_padding = if activity_tick > 4 {
+        Padding {
+            left: wave_position_h,
+            top: image_padding.top,
+            ..Default::default()
+        }
+    } else {
+        Padding {
+            right: wave_position_h,
+            top: image_padding.top,
+            ..Default::default()
+        }
+    };
+
+    Paragraph::new(line_imgs[0].clone())
+        .block(Block::new().padding(image_padding))
+        .style(Style::new().white())
+        .centered()
+        .render(area, buf);
+    Paragraph::new(line_imgs[1].clone())
+        .block(Block::new().padding(wave_padding))
+        .style(Style::new().white())
+        .centered()
+        .render(area, buf);
+}
+
 // Returns as white monochrome lines
 pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
     let width = img.width();
@@ -585,8 +689,21 @@ fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {
     .render(area, buf);
 }
 
-fn render_bath(_game: &Game, _area: Rect, _buf: &mut Buffer) {
-    // TODO: Add bath animation
+fn render_bath(game: &Game, area: Rect, buf: &mut Buffer) {
+    let frame = if game.activity_ticks.is_multiple_of(2) {
+        0
+    } else {
+        1
+    };
+    self::render_wave_over_image(
+        "assets/ratagotchi-idle.gif".to_string(),
+        "assets/screen-wave.png".to_string(),
+        area,
+        VerticalPosition::Center,
+        Some(frame),
+        game.activity_ticks,
+        buf,
+    );
 }
 
 fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
