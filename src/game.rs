@@ -36,6 +36,7 @@ pub struct Game {
     pub stats_screen: RenderStats,
     pub is_action_over: bool,
     pub is_dark: bool,
+    pub mini_game: Option<MiniGame>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -81,6 +82,23 @@ struct Fitness {
 }
 
 struct FitnessChange(f32);
+
+#[derive(Debug, PartialEq)]
+struct MiniGame {
+    round: usize,
+    scores: [bool; 3],
+    first_number: usize,
+    second_number: usize,
+    current_pick: MiniGamePick,
+    timer: usize,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub enum MiniGamePick {
+    #[default]
+    Higher,
+    Lower,
+}
 
 impl Game {
     pub fn run(
@@ -356,6 +374,8 @@ impl Game {
             self.active_view = GameView::Scold;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.discipline += 40.0;
+        } else if self.active_view == GameView::Play {
+            todo!();
         }
     }
 
@@ -549,5 +569,24 @@ impl Ratagotchi {
             FitnessChange(-RATAGOTCHI_FITNESS_CHANGE_S),
             num_fitness_decays,
         );
+    }
+}
+
+impl Default for MiniGame {
+    fn default() -> Self {
+        MiniGame {
+            round: 0,
+            scores: [false, false, false],
+            first_number: 0,
+            second_number: 0,
+            current_pick: MiniGamePick::default(),
+            timer: RATAGOTCHI_ACTIVITY_DURATION,
+        }
+    }
+}
+
+impl MiniGame {
+    pub fn new() -> Self {
+        Default::default()
     }
 }
