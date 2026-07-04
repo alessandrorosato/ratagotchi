@@ -269,7 +269,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Main => render_main(game, main, buf),
         GameView::Feed => render_feed(game, main, buf),
         GameView::Lights => render_main(game, main, buf),
-        GameView::Play => todo!(),
+        GameView::Play => render_play(game, main, buf),
         GameView::Medicine => render_medicine(game, main, buf),
         GameView::Bath => render_bath(game, main, buf),
         GameView::Health => render_health(game, main, buf),
@@ -675,6 +675,10 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         .centered()
         .render(bottom_right, buf);
     }
+}
+
+fn render_play(_game: &Game, _area: Rect, _buf: &mut Buffer) {
+    // TODO: Implement me!
 }
 
 fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {

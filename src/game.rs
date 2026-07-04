@@ -37,6 +37,7 @@ pub struct Game {
     pub is_action_over: bool,
     pub is_dark: bool,
     pub mini_game: Option<MiniGame>,
+    pub is_mini_game_running: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -234,7 +235,7 @@ impl Game {
     fn jump_to_action(&self) -> bool {
         if matches!(
             self.highlighted_tab,
-            GameView::Bath | GameView::Medicine | GameView::Scold
+            GameView::Bath | GameView::Medicine | GameView::Scold | GameView::Play
         ) {
             return true;
         }
@@ -374,8 +375,14 @@ impl Game {
             self.active_view = GameView::Scold;
             self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
             self.ratagotchi.discipline += 40.0;
-        } else if self.active_view == GameView::Play {
-            todo!();
+        } else if self.highlighted_tab == GameView::Play
+            && self.active_view != GameView::Play
+            && !self.is_mini_game_running
+            && self.mini_game.is_none()
+        {
+            self.mini_game = Some(MiniGame::new());
+            // TODO: Probably needs its own file
+            panic!("{:?}", self);
         }
     }
 
