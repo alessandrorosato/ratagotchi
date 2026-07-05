@@ -576,7 +576,7 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
     } else {
         let [left, center, right] = center_and_columns_layout(area);
         self::render_image_as_paragraph(
-            "assets/ratagotchi-idle.gif".to_string(),
+            "assets/ratagotchi/idle.gif".to_string(),
             center,
             VerticalPosition::Center,
             Some(game.tick_progress % 2),
@@ -618,7 +618,7 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
 
         // Use the feeding item to run a short animation
         self::render_image_as_paragraph(
-            "assets/ratagotchi-eat.gif".to_string(),
+            "assets/ratagotchi/eat.gif".to_string(),
             view_layout[1],
             VerticalPosition::Center,
             Some(game.activity_ticks % 2),
@@ -684,7 +684,7 @@ fn render_play(_game: &Game, _area: Rect, _buf: &mut Buffer) {
 fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {
     let frame = if game.activity_ticks > 5 { 0 } else { 1 };
     self::render_image_as_paragraph(
-        "assets/ratagotchi-medicine.gif".to_string(),
+        "assets/ratagotchi/medicine.gif".to_string(),
         area,
         VerticalPosition::Center,
         Some(frame),
@@ -700,7 +700,7 @@ fn render_bath(game: &Game, area: Rect, buf: &mut Buffer) {
         1
     };
     self::render_wave_over_image(
-        "assets/ratagotchi-idle.gif".to_string(),
+        "assets/ratagotchi/idle.gif".to_string(),
         "assets/screen-wave.png".to_string(),
         area,
         VerticalPosition::Center,
@@ -715,7 +715,7 @@ fn render_health(game: &Game, area: Rect, buf: &mut Buffer) {
     match game.stats_screen {
         RenderStats::Stats => {
             self::render_image_as_paragraph(
-                "assets/ratagotchi-head.png".to_string(),
+                "assets/ratagotchi/head.png".to_string(),
                 top_left,
                 VerticalPosition::Center,
                 None,
@@ -783,7 +783,7 @@ fn render_scold(game: &Game, area: Rect, buf: &mut Buffer) {
         1
     };
     self::render_image_as_paragraph(
-        "assets/ratagotchi-scold.gif".to_string(),
+        "assets/ratagotchi/scold.gif".to_string(),
         area,
         VerticalPosition::Center,
         Some(frame),
