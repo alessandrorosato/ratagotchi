@@ -20,6 +20,7 @@ use crate::{
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
         SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
+    minigame::MiniGame,
     ui::{GameView, RenderStats},
 };
 
@@ -83,23 +84,6 @@ struct Fitness {
 }
 
 struct FitnessChange(f32);
-
-#[derive(Debug, PartialEq)]
-struct MiniGame {
-    round: usize,
-    scores: [bool; 3],
-    first_number: usize,
-    second_number: usize,
-    current_pick: MiniGamePick,
-    timer: usize,
-}
-
-#[derive(Debug, Default, PartialEq)]
-pub enum MiniGamePick {
-    #[default]
-    Higher,
-    Lower,
-}
 
 impl Game {
     pub fn run(
@@ -381,8 +365,12 @@ impl Game {
             && self.mini_game.is_none()
         {
             self.mini_game = Some(MiniGame::new());
-            // TODO: Probably needs its own file
-            panic!("{:?}", self);
+            self.active_view = GameView::Play;
+            self.is_mini_game_running = true;
+        } else if self.is_mini_game_running
+            && let Some(mut mini_game) = self.mini_game.clone()
+        {
+            mini_game.run();
         }
     }
 
@@ -576,24 +564,5 @@ impl Ratagotchi {
             FitnessChange(-RATAGOTCHI_FITNESS_CHANGE_S),
             num_fitness_decays,
         );
-    }
-}
-
-impl Default for MiniGame {
-    fn default() -> Self {
-        MiniGame {
-            round: 0,
-            scores: [false, false, false],
-            first_number: 0,
-            second_number: 0,
-            current_pick: MiniGamePick::default(),
-            timer: RATAGOTCHI_ACTIVITY_DURATION,
-        }
-    }
-}
-
-impl MiniGame {
-    pub fn new() -> Self {
-        Default::default()
     }
 }

@@ -484,8 +484,8 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 
 fn get_instructions(game: &Game) -> Line<'static> {
     Line::from(format!(
-        " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {} ",
-        game.tick_progress, game.activity_ticks
+        " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {}, is_mini_game_running: {} ",
+        game.tick_progress, game.activity_ticks, game.is_mini_game_running
     ))
     .alignment(Alignment::Center)
 }
@@ -677,8 +677,10 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
     }
 }
 
-fn render_play(_game: &Game, _area: Rect, _buf: &mut Buffer) {
-    // TODO: Implement me!
+fn render_play(game: &Game, area: Rect, buf: &mut Buffer) {
+    Paragraph::new(Line::from(format!("{:?}", game.mini_game)))
+        .centered()
+        .render(area, buf);
 }
 
 fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {
