@@ -37,7 +37,7 @@ pub struct Game {
     pub stats_screen: RenderStats,
     pub is_action_over: bool,
     pub is_dark: bool,
-    pub mini_game: Option<MiniGame>,
+    pub mini_game: MiniGame,
     pub is_mini_game_running: bool,
 }
 
@@ -214,6 +214,9 @@ impl Game {
         if previous_activity_tick == 1 {
             self.is_action_over = true;
         }
+        if self.is_mini_game_running {
+            self.mini_game.run();
+        }
     }
 
     fn jump_to_action(&self) -> bool {
@@ -362,15 +365,10 @@ impl Game {
         } else if self.highlighted_tab == GameView::Play
             && self.active_view != GameView::Play
             && !self.is_mini_game_running
-            && self.mini_game.is_none()
         {
-            self.mini_game = Some(MiniGame::new());
+            self.mini_game = MiniGame::new();
             self.active_view = GameView::Play;
             self.is_mini_game_running = true;
-        } else if self.is_mini_game_running
-            && let Some(mut mini_game) = self.mini_game.clone()
-        {
-            mini_game.run();
         }
     }
 

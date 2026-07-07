@@ -1,6 +1,6 @@
-use crate::config::{MINIGAME_NUM_ROUNDS, MINIGAME_ROUND_DURATION, RATAGOTCHI_ACTIVITY_DURATION};
+use crate::config::{MINIGAME_NUM_ROUNDS, MINIGAME_ROUND_DURATION};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct MiniGame {
     pub round: usize,
     pub scores: [Option<bool>; 3],
@@ -8,26 +8,21 @@ pub struct MiniGame {
     pub second_number: usize,
     pub current_pick: MiniGamePick,
     pub timer: usize,
+    pub phase: MiniGamePhase,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub enum MiniGamePick {
     #[default]
     Higher,
     Lower,
 }
 
-impl Default for MiniGame {
-    fn default() -> Self {
-        MiniGame {
-            round: 0,
-            scores: [None, None, None],
-            first_number: 0,
-            second_number: 0,
-            current_pick: MiniGamePick::default(),
-            timer: RATAGOTCHI_ACTIVITY_DURATION,
-        }
-    }
+#[derive(Debug, Default, PartialEq)]
+pub enum MiniGamePhase {
+    #[default]
+    Play,
+    Post,
 }
 
 impl MiniGame {
@@ -37,6 +32,19 @@ impl MiniGame {
 
     pub fn run(&mut self) {
         self.check_current_round();
+    }
+
+    fn tick(&mut self) {
+        match self.phase {
+            MiniGamePhase::Play => {
+                if self.timer != 0 {
+                    self.timer -= 1;
+                } else {
+                    self.phase = MiniGamePhase::Post;
+                }
+            }
+            MiniGamePhase::Post => todo!(),
+        }
     }
 
     fn check_current_round(&mut self) {
@@ -78,6 +86,7 @@ impl MiniGame {
             // Move to next round
             self.next_round();
         }
+        self.tick();
     }
 
     fn next_round(&mut self) {
