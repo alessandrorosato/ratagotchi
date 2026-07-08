@@ -485,8 +485,8 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 
 fn get_instructions(game: &Game) -> Line<'static> {
     Line::from(format!(
-        " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {}, is_mini_game_running: {} ",
-        game.tick_progress, game.activity_ticks, game.is_mini_game_running
+        " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {} ",
+        game.tick_progress, game.activity_ticks
     ))
     .alignment(Alignment::Center)
 }
@@ -697,14 +697,17 @@ fn render_play(game: &Game, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_mini_game_play(game: &Game, areas: [Rect; 4], buf: &mut Buffer) {
-    self::render_image_as_paragraph(
-        "assets/ratagotchi/idle.gif".to_string(),
-        areas[1],
-        VerticalPosition::Center,
-        Some(game.tick_progress % 2),
-    )
-    .centered()
-    .render(areas[1], buf);
+    let (image, frame) = if game.mini_game.second_number == 0 {
+        (
+            "assets/ratagotchi/game-idle.gif",
+            Some(game.tick_progress % 2),
+        )
+    } else {
+        ("assets/ratagotchi/game-showoff.png", None)
+    };
+    self::render_image_as_paragraph(image.to_string(), areas[1], VerticalPosition::Center, frame)
+        .centered()
+        .render(areas[1], buf);
 
     let selected_choice = if game.mini_game.current_pick == MiniGamePick::Higher {
         (true, false)

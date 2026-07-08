@@ -38,7 +38,7 @@ pub struct Game {
     pub is_action_over: bool,
     pub is_dark: bool,
     pub mini_game: MiniGame,
-    pub is_mini_game_running: bool,
+    is_mini_game_running: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
