@@ -8,13 +8,14 @@ use ratatui::{
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
-    widgets::{Block, Padding, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Padding, Paragraph, Widget},
 };
 use tui_big_text::{BigText, PixelSize};
 
 use crate::{
     config::RATAGOTCHI_ACTIVITY_DURATION,
     game::{Choice, Game},
+    minigame::MiniGamePick,
     widgets::ProgressBar,
 };
 
@@ -678,9 +679,116 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_play(game: &Game, area: Rect, buf: &mut Buffer) {
-    Paragraph::new(Line::from(format!("{:?}", game.mini_game)))
+    let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(5)]).split(area);
+    let [left, center, right] = center_and_columns_layout(layout[0]);
+    let left_column = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).split(left);
+    let right_column = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).split(right);
+
+    match game.mini_game.phase {
+        crate::minigame::MiniGamePhase::Play => render_mini_game_play(
+            game,
+            [left_column[1], center, right_column[1], layout[1]],
+            buf,
+        ),
+        crate::minigame::MiniGamePhase::Post => {
+            render_mini_game_post(game, [left_column[1], center, right_column[1]], buf)
+        }
+    }
+}
+
+fn render_mini_game_play(game: &Game, areas: [Rect; 4], buf: &mut Buffer) {
+    self::render_image_as_paragraph(
+        "assets/ratagotchi/idle.gif".to_string(),
+        areas[1],
+        VerticalPosition::Center,
+        Some(game.tick_progress % 2),
+    )
+    .centered()
+    .render(areas[1], buf);
+
+    let selected_choice = if game.mini_game.current_pick == MiniGamePick::Higher {
+        (true, false)
+    } else {
+        (false, true)
+    };
+
+    if game.mini_game.first_number != 0 {
+        BigText::builder()
+            .pixel_size(PixelSize::Full)
+            .style(Style::new().white())
+            .centered()
+            .lines([game.mini_game.print_first_number().into()])
+            .build()
+            .render(areas[0], buf);
+    }
+
+    if game.mini_game.second_number != 0 {
+        BigText::builder()
+            .pixel_size(PixelSize::Full)
+            .style(Style::new().white())
+            .centered()
+            .lines([game.mini_game.print_second_number().into()])
+            .build()
+            .render(areas[2], buf);
+    }
+
+    let choice_layout = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Length(34),
+        Constraint::Fill(1),
+        Constraint::Length(34),
+        Constraint::Fill(1),
+    ])
+    .split(areas[3]);
+
+    BigText::builder()
+        .pixel_size(PixelSize::Quadrant)
+        .style(Style::new().white())
         .centered()
-        .render(area, buf);
+        .lines(["Higher".to_string().into()])
+        .block(if selected_choice.0 {
+            Block::new()
+                .borders(Borders::BOTTOM)
+                .border_type(BorderType::Thick)
+        } else {
+            Block::new()
+        })
+        .build()
+        .render(choice_layout[1], buf);
+
+    BigText::builder()
+        .pixel_size(PixelSize::Quadrant)
+        .style(Style::new().white())
+        .centered()
+        .lines(["Lower".to_string().into()])
+        .block(if selected_choice.1 {
+            Block::new()
+                .borders(Borders::BOTTOM)
+                .border_type(BorderType::Thick)
+        } else {
+            Block::new()
+        })
+        .build()
+        .render(choice_layout[3], buf);
+}
+
+fn render_mini_game_post(game: &Game, areas: [Rect; 3], buf: &mut Buffer) {
+    let round_index = game.mini_game.round - 1;
+
+    if let Some(value) = game.mini_game.scores[round_index] {
+        if value {
+        } else {
+            self::render_image_as_paragraph(
+                "assets/ratagotchi/scold.gif".to_string(),
+                areas[1],
+                VerticalPosition::Center,
+                Some(game.tick_progress % 2),
+            )
+            .centered()
+            .render(areas[1], buf);
+        }
+        // Happy noises
+    }
 }
 
 fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {

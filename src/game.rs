@@ -20,7 +20,7 @@ use crate::{
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
         SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
-    minigame::MiniGame,
+    minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
 };
 
@@ -154,12 +154,16 @@ impl Game {
             KeyCode::Up => self.change_choice(ChoiceDirection::Up),
             KeyCode::Down => self.change_choice(ChoiceDirection::Down),
             KeyCode::Right => {
-                if self.activity_ticks == 0 {
+                if self.is_mini_game_running {
+                    self.change_minigame_pick();
+                } else if self.activity_ticks == 0 {
                     self.next_view()
                 }
             }
             KeyCode::Left => {
-                if self.activity_ticks == 0 {
+                if self.is_mini_game_running {
+                    self.change_minigame_pick();
+                } else if self.activity_ticks == 0 {
                     self.prev_view();
                 }
             }
@@ -214,8 +218,12 @@ impl Game {
         if previous_activity_tick == 1 {
             self.is_action_over = true;
         }
-        if self.is_mini_game_running {
-            self.mini_game.run();
+        if self.is_mini_game_running
+            && let Some(result) = self.mini_game.run()
+        {
+            self.ratagotchi.happiness += result;
+            self.is_mini_game_running = false;
+            self.set_view(GameView::Main);
         }
     }
 
@@ -370,6 +378,14 @@ impl Game {
             self.active_view = GameView::Play;
             self.is_mini_game_running = true;
         }
+    }
+
+    fn change_minigame_pick(&mut self) {
+        self.mini_game.current_pick = if self.mini_game.current_pick == MiniGamePick::Higher {
+            MiniGamePick::Lower
+        } else {
+            MiniGamePick::Higher
+        };
     }
 
     fn exit(&mut self) {
