@@ -20,7 +20,7 @@ pub const STAT_INCREASE_FOOD_RATFOOD: f32 = 45.0;
 // Play (minigame)
 pub const MINIGAME_NUM_ROUNDS: usize = 3;
 pub const MINIGAME_ROUND_DURATION: usize = 10;
-pub const MINIGAME_POSTROUND_DURATION: usize = 10;
+pub const MINIGAME_POSTROUND_DURATION: usize = 2;
 pub const MINIGAME_HAPPINESS_REWARD_S: f32 = 5.0;
 pub const MINIGAME_HAPPINESS_REWARD_L: f32 = 20.0;
 

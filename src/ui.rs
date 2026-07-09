@@ -780,12 +780,20 @@ fn render_mini_game_post(game: &Game, areas: [Rect; 3], buf: &mut Buffer) {
 
     if let Some(value) = game.mini_game.scores[round_index] {
         if value {
-        } else {
             self::render_image_as_paragraph(
-                "assets/ratagotchi/scold.gif".to_string(),
+                "assets/ratagotchi/game-result-1.png".to_string(),
                 areas[1],
                 VerticalPosition::Center,
-                Some(game.tick_progress % 2),
+                None,
+            )
+            .centered()
+            .render(areas[1], buf);
+        } else {
+            self::render_image_as_paragraph(
+                "assets/ratagotchi/game-result-0.png".to_string(),
+                areas[1],
+                VerticalPosition::Center,
+                None,
             )
             .centered()
             .render(areas[1], buf);
