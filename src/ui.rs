@@ -254,7 +254,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
 
     let block = Block::bordered()
         .title(title.centered())
-        .title_bottom(get_instructions(game))
+        .title_bottom(get_instructions())
         .border_set(border::THICK);
 
     let [top, main, bottom] = block.inner(area).layout(&layout);
@@ -483,11 +483,8 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
     lines
 }
 
-fn get_instructions(game: &Game) -> Line<'static> {
-    Line::from(format!(
-        " <Tab> for menu navigation, <Enter> to select, <Esc> to return to main view - tick: {}, activity_ticks: {} ",
-        game.tick_progress, game.activity_ticks
-    ))
+fn get_instructions() -> Line<'static> {
+    Line::from(" <Left/Right> main navigation, <Up/Down> inner navigation, <Enter> select, <Esc> return to main view , <q> quit ".to_string())
     .alignment(Alignment::Center)
 }
 
@@ -914,26 +911,40 @@ fn render_scold(game: &Game, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_attention(game: &Game, area: Rect, buf: &mut Buffer) {
+    // Get low values
+    let mut low_values = vec![];
+    if game.ratagotchi.hunger < 20.0 {
+        low_values.push(Span::from("Low hunger"));
+    }
+    if game.ratagotchi.health < 20.0 {
+        low_values.push(Span::from("Low health"));
+    }
+    if game.ratagotchi.discipline < 20.0 {
+        low_values.push(Span::from("Low discipline"));
+    }
+    if game.ratagotchi.happiness < 20.0 {
+        low_values.push(Span::from("Low happiness"));
+    }
+
     // Flash content
     let should_render = game.tick_progress.is_multiple_of(2);
 
-    if should_render {
-        let mut low_values = vec![];
-
-        // Get low values
-        if game.ratagotchi.hunger < 20.0 {
-            low_values.push(Span::from("Low hunger"));
-        }
-        if game.ratagotchi.health < 20.0 {
-            low_values.push(Span::from("Low health"));
-        }
-        if game.ratagotchi.discipline < 20.0 {
-            low_values.push(Span::from("Low discipline"));
-        }
-        if game.ratagotchi.happiness < 20.0 {
-            low_values.push(Span::from("Low happiness"));
-        }
-
+    if low_values.is_empty() {
+        let one_row = Layout::vertical([
+            Constraint::Percentage(33),
+            Constraint::Fill(1),
+            Constraint::Percentage(33),
+        ]);
+        let block = Block::new();
+        let layout: [Rect; 3] = block.inner(area).layout(&one_row);
+        BigText::builder()
+            .pixel_size(PixelSize::Full)
+            .style(Style::new().white())
+            .centered()
+            .lines(["Healthy =)".to_string().into()])
+            .build()
+            .render(layout[1], buf);
+    } else if should_render {
         let (layout, text_size) = if low_values.len() < 3 {
             // We need to stick to [Rect; 4], so we add two small rows at the bottom
             let two_rows = Layout::vertical([
