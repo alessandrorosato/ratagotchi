@@ -100,15 +100,23 @@ impl Game {
                     self.next_state(GameState::Running);
                 }
                 GameState::Running => {
-                    match rx.recv().unwrap() {
-                        Trigger::Input(key_event) => self.handle_key_event(key_event),
-                        Trigger::Tick => {
-                            self.update_stats();
-                            self.ratagotchi.fitness_decay(
-                                (self.ratagotchi.fitness.last_update - Utc::now()).as_seconds_f32(),
-                            );
-                            self.tick_increase();
-                            self.back_to_main();
+                    match rx.recv() {
+                        Ok(trigger) => match trigger {
+                            Trigger::Input(key_event) => self.handle_key_event(key_event),
+                            Trigger::Tick => {
+                                self.update_stats();
+                                self.ratagotchi.fitness_decay(
+                                    (self.ratagotchi.fitness.last_update - Utc::now())
+                                        .as_seconds_f32(),
+                                );
+                                self.tick_increase();
+                                self.back_to_main();
+                            }
+                        },
+                        Err(_) => {
+                            // TODO: logging
+                            println!("Receiver error.");
+                            break;
                         }
                     }
                     if self.tick_progress.is_multiple_of(GAME_AUTOSAVE_FREQUENCY) {
