@@ -408,7 +408,7 @@ impl Game {
         if let Some(proj_dirs) = ProjectDirs::from("", "shelakynn", "ratagotchi") {
             let storage_folder = proj_dirs.data_dir();
             if !storage_folder.to_path_buf().exists() {
-                std::fs::create_dir_all(storage_folder).unwrap();
+                std::fs::create_dir_all(storage_folder)?;
             }
             Ok(storage_folder.to_path_buf())
         } else {
@@ -421,10 +421,14 @@ impl Game {
             Ok(f) => {
                 self.ratagotchi.last_update = Utc::now();
                 let full_path = f.join("savegame.json");
-                let data = serde_json::to_vec(&self.ratagotchi).unwrap();
-                let _ = std::fs::write(full_path, data).inspect_err(|e| {
-                    log::error!("Error while writing save file: {}", e);
-                });
+                match serde_json::to_vec(&self.ratagotchi) {
+                    Ok(data) => {
+                        let _ = std::fs::write(full_path, data).inspect_err(|e| {
+                            log::error!("Error while writing save file: {}", e);
+                        });
+                    }
+                    Err(e) => log::error!("Error while getting storage folder: {}", e),
+                };
             }
             Err(e) => {
                 log::error!("Error while getting storage folder: {}", e);
@@ -464,8 +468,17 @@ pub enum Trigger {
 
 pub fn handle_input_events(tx: mpsc::Sender<Trigger>) {
     loop {
-        if let Event::Key(key_event) = crossterm::event::read().unwrap() {
-            tx.send(Trigger::Input(key_event)).unwrap()
+        match crossterm::event::read() {
+            Ok(Event::Key(key_event)) => {
+                if let Err(e) = tx.send(Trigger::Input(key_event)) {
+                    log::error!("Failed to transmit key event: {}", e);
+                    break;
+                }
+            }
+            Ok(_) => {} // Discard all the other event types
+            Err(e) => {
+                log::error!("Failed to read terminal event: {}", e);
+            }
         }
     }
 }
@@ -473,7 +486,10 @@ pub fn handle_input_events(tx: mpsc::Sender<Trigger>) {
 pub fn tick_lapse(tx: mpsc::Sender<Trigger>) {
     loop {
         thread::sleep(Duration::from_millis(500));
-        tx.send(Trigger::Tick).unwrap();
+        if let Err(e) = tx.send(Trigger::Tick) {
+            log::error!("Failed to transmit tick: {}", e);
+            break;
+        }
     }
 }
 
