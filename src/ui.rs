@@ -209,9 +209,13 @@ fn human_friendly_time_delta(time_delta: i64) -> String {
         0 => "0 seconds".to_string(),
         1 => parts[0].clone(),
         _ => {
-            let last = parts.pop().unwrap();
-            let rest = parts.join(", ");
-            format!("{} and {}", rest, last)
+            if let Some(last) = parts.pop() {
+                let rest = parts.join(", ");
+                format!("{} and {}", rest, last)
+            } else {
+                "Some time ago...".to_string()
+                // TODO: log this!
+            }
         }
     }
 }
@@ -287,13 +291,18 @@ fn render_image_as_paragraph(
 ) -> Paragraph<'static> {
     let rgba_img = match frame {
         Some(f) => {
-            let file = File::open(path).unwrap();
-            let reader = BufReader::new(file);
-            let decoder = GifDecoder::new(reader).unwrap();
-            let mut frames = decoder.into_frames();
-            let frame = frames.nth(f);
-
-            frame.unwrap().unwrap().into_buffer()
+            if let Ok(file) = File::open(&path) {
+                let reader = BufReader::new(file);
+                let decoder = GifDecoder::new(reader).unwrap();
+                let mut frames = decoder.into_frames();
+                if let Some(frame) = frames.nth(f) {
+                    frame.unwrap().into_buffer()
+                } else {
+                    panic!("Error during frame selection: {}", &path.to_lowercase());
+                }
+            } else {
+                panic!("Can't open asset: {}", &path.to_lowercase());
+            }
         }
         None => {
             let image_reader = match ImageReader::open(path.to_lowercase()) {
@@ -301,7 +310,10 @@ fn render_image_as_paragraph(
                 Err(_) => panic!("Can't find asset: {}", path.to_lowercase()),
             };
 
-            image_reader.decode().unwrap().into_rgba8()
+            match image_reader.decode() {
+                Ok(image) => image.into_rgba8(),
+                Err(_) => panic!("Can't decode asset: {}", path.to_lowercase()),
+            }
         }
     };
 
