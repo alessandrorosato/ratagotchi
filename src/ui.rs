@@ -177,6 +177,7 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
     let widest_label = labels.iter().map(|l| l.len()).max().unwrap_or(10) + 6;
 
     for (i, title) in labels.iter().enumerate() {
+        let is_selected = i == game.main_menu_index.0;
         let row_chunks = Layout::horizontal([
             Constraint::Fill(1),
             Constraint::Length(widest_label as u16),
@@ -184,11 +185,26 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
         ])
         .split(vertical_layout[i + 1]);
 
-        let block = Block::bordered();
-        Paragraph::new(Line::from(title.to_string()))
+        let block = Block::new()
+            .bg(if is_selected {
+                Color::White
+            } else {
+                Color::default()
+            })
+            .fg(if is_selected {
+                Color::Black
+            } else {
+                Color::default()
+            });
+        Paragraph::new(vec![Line::default(), Line::from(title.to_string())])
             .style(Style::default().fg(Color::White))
             .block(block)
             .centered()
+            .style(if is_selected {
+                Style::default().fg(Color::Black)
+            } else {
+                Style::default().fg(Color::White)
+            })
             .render(row_chunks[1], buf);
     }
 }

@@ -39,6 +39,7 @@ pub struct Game {
     pub is_dark: bool,
     pub mini_game: MiniGame,
     is_mini_game_running: bool,
+    pub main_menu_index: MainMenuIndex,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -85,6 +86,9 @@ struct Fitness {
 }
 
 struct FitnessChange(f32);
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct MainMenuIndex(pub usize);
 
 impl Game {
     pub fn run(
@@ -158,8 +162,8 @@ impl Game {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         if self.state == GameState::Menu {
             match key_event.code {
-                KeyCode::Up => {}    // Move up in the menu,
-                KeyCode::Down => {}  // Move down in the menu,
+                KeyCode::Up => self.main_menu_index_decrease(),
+                KeyCode::Down => self.main_menu_index_increase(),
                 KeyCode::Enter => {} // Do stuff
                 KeyCode::Char('q') => self.exit = true,
                 _ => {}
@@ -484,6 +488,21 @@ impl Game {
         let ticks_delta = time_delta * 2.0;
         self.tick_decay(ticks_delta);
         self.ratagotchi.fitness_decay(time_delta);
+    }
+
+    fn main_menu_index_increase(&mut self) {
+        let current_index = self.main_menu_index.0;
+        let new_index = (current_index + 1).min(2);
+        self.main_menu_index = MainMenuIndex(new_index);
+    }
+
+    fn main_menu_index_decrease(&mut self) {
+        let current_index = self.main_menu_index.0;
+        if current_index == 0 {
+            return;
+        }
+        let new_index = (current_index - 1).max(0);
+        self.main_menu_index = MainMenuIndex(new_index);
     }
 }
 
