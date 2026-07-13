@@ -56,9 +56,10 @@ pub struct Ratagotchi {
     pub last_update: DateTime<Utc>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub enum GameState {
     #[default]
+    Menu,
     CatchingUp,
     Running,
     Exiting,
@@ -93,6 +94,21 @@ impl Game {
     ) -> io::Result<()> {
         while !self.exit {
             match self.state {
+                GameState::Menu => {
+                    match rx.recv() {
+                        Ok(trigger) => {
+                            if let Trigger::Input(key_event) = trigger {
+                                self.handle_key_event(key_event)
+                            }
+                        }
+                        Err(_) => {
+                            // TODO: logging
+                            println!("Receiver error.");
+                            break;
+                        }
+                    }
+                    terminal.draw(|frame| self.draw(frame))?;
+                }
                 GameState::CatchingUp => {
                     self.load();
                     terminal.draw(|frame| self.draw(frame))?;
@@ -140,42 +156,52 @@ impl Game {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.next_state(GameState::Exiting),
-            KeyCode::Tab => self.next_view(),
-            KeyCode::BackTab => self.prev_view(),
-            KeyCode::Enter => {
-                if self.jump_to_action() {
-                    self.do_action();
-                } else if self.highlighted_tab == GameView::Lights {
-                    self.is_dark = !self.is_dark;
-                } else if self.active_view != self.highlighted_tab {
-                    self.change_view();
-                } else {
-                    self.do_action();
+        if self.state == GameState::Menu {
+            match key_event.code {
+                KeyCode::Up => {}    // Move up in the menu,
+                KeyCode::Down => {}  // Move down in the menu,
+                KeyCode::Enter => {} // Do stuff
+                KeyCode::Char('q') => self.exit = true,
+                _ => {}
+            }
+        } else {
+            match key_event.code {
+                KeyCode::Char('q') => self.next_state(GameState::Exiting),
+                KeyCode::Tab => self.next_view(),
+                KeyCode::BackTab => self.prev_view(),
+                KeyCode::Enter => {
+                    if self.jump_to_action() {
+                        self.do_action();
+                    } else if self.highlighted_tab == GameView::Lights {
+                        self.is_dark = !self.is_dark;
+                    } else if self.active_view != self.highlighted_tab {
+                        self.change_view();
+                    } else {
+                        self.do_action();
+                    }
                 }
-            }
-            KeyCode::Esc => {
-                self.set_view(GameView::Main);
-                self.highlighted_tab = GameView::Main;
-            }
-            KeyCode::Up => self.change_choice(ChoiceDirection::Up),
-            KeyCode::Down => self.change_choice(ChoiceDirection::Down),
-            KeyCode::Right => {
-                if self.is_mini_game_running {
-                    self.change_minigame_pick();
-                } else if self.activity_ticks == 0 {
-                    self.next_view()
+                KeyCode::Esc => {
+                    self.set_view(GameView::Main);
+                    self.highlighted_tab = GameView::Main;
                 }
-            }
-            KeyCode::Left => {
-                if self.is_mini_game_running {
-                    self.change_minigame_pick();
-                } else if self.activity_ticks == 0 {
-                    self.prev_view();
+                KeyCode::Up => self.change_choice(ChoiceDirection::Up),
+                KeyCode::Down => self.change_choice(ChoiceDirection::Down),
+                KeyCode::Right => {
+                    if self.is_mini_game_running {
+                        self.change_minigame_pick();
+                    } else if self.activity_ticks == 0 {
+                        self.next_view()
+                    }
                 }
+                KeyCode::Left => {
+                    if self.is_mini_game_running {
+                        self.change_minigame_pick();
+                    } else if self.activity_ticks == 0 {
+                        self.prev_view();
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 
