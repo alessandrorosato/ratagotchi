@@ -157,16 +157,40 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
             .spacing(1)
             .split(vertical_layout[1]);
 
-    let block = Block::bordered()
+    let vertical_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(3),
+        Constraint::Length(3),
+        Constraint::Length(3),
+        Constraint::Fill(1),
+    ])
+    .spacing(1)
+    .split(horizontal_layout[1]);
+
+    Block::bordered()
         .title(title.centered())
         .title_bottom(get_menu_instructions())
-        .border_set(border::THICK);
-
-    Paragraph::new(Line::from("Main Menu content".to_string()))
-        .block(block)
-        .style(Style::new().white())
-        .centered()
+        .border_set(border::THICK)
         .render(horizontal_layout[1], buf);
+
+    let labels = ["Load Ratagotchi", "New Ratagotchi", "Quit"];
+    let widest_label = labels.iter().map(|l| l.len()).max().unwrap_or(10) + 6;
+
+    for (i, title) in labels.iter().enumerate() {
+        let row_chunks = Layout::horizontal([
+            Constraint::Fill(1),
+            Constraint::Length(widest_label as u16),
+            Constraint::Fill(1),
+        ])
+        .split(vertical_layout[i + 1]);
+
+        let block = Block::bordered();
+        Paragraph::new(Line::from(title.to_string()))
+            .style(Style::default().fg(Color::White))
+            .block(block)
+            .centered()
+            .render(row_chunks[1], buf);
+    }
 }
 
 fn render_catching_up(game: &Game, area: Rect, buf: &mut Buffer) {
