@@ -8,13 +8,13 @@ use ratatui::{
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Padding, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
 use tui_big_text::{BigText, PixelSize};
 
 use crate::{
     config::RATAGOTCHI_ACTIVITY_DURATION,
-    game::{Choice, Game},
+    game::{Choice, Game, GameState},
     minigame::MiniGamePick,
     widgets::ProgressBar,
 };
@@ -135,10 +135,95 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
 impl Widget for &Game {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.state {
-            crate::game::GameState::CatchingUp => render_catching_up(self, area, buf),
-            crate::game::GameState::Running => render_view(self, area, buf),
-            crate::game::GameState::Exiting => render_exiting(area, buf),
+            GameState::Menu => render_main_menu(self, area, buf),
+            GameState::CatchingUp => render_catching_up(self, area, buf),
+            GameState::Running => render_view(self, area, buf),
+            GameState::Exiting => render_exiting(area, buf),
         }
+    }
+}
+
+fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Ratagotchi - Main Menu ".bold());
+    let vertical_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(20),
+        Constraint::Fill(1),
+    ])
+    .spacing(1)
+    .split(area);
+    let horizontal_layout =
+        Layout::horizontal([Constraint::Fill(1), Constraint::Min(5), Constraint::Fill(1)])
+            .spacing(1)
+            .split(vertical_layout[1]);
+
+    let vertical_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(3),
+        Constraint::Length(3),
+        Constraint::Length(3),
+        Constraint::Fill(1),
+    ])
+    .spacing(1)
+    .split(horizontal_layout[1]);
+
+    Block::bordered()
+        .title(title.centered())
+        .title_bottom(get_menu_instructions())
+        .border_set(border::THICK)
+        .render(horizontal_layout[1], buf);
+
+    let labels = ["Load Ratagotchi", "New Ratagotchi", "Quit"];
+    let widest_label = labels.iter().map(|l| l.len()).max().unwrap_or(10) + 6;
+
+    for (i, title) in labels.iter().enumerate() {
+        let is_selected = i == game.main_menu_index.0;
+        let row_chunks = Layout::horizontal([
+            Constraint::Fill(1),
+            Constraint::Length(widest_label as u16),
+            Constraint::Fill(1),
+        ])
+        .split(vertical_layout[i + 1]);
+
+        let block = Block::new()
+            .bg(if is_selected {
+                Color::White
+            } else {
+                Color::default()
+            })
+            .fg(if is_selected {
+                Color::Black
+            } else {
+                Color::default()
+            });
+        Paragraph::new(vec![Line::default(), Line::from(title.to_string())])
+            .style(Style::default().fg(Color::White))
+            .block(block)
+            .centered()
+            .style(if is_selected {
+                Style::default().fg(Color::Black)
+            } else {
+                Style::default().fg(Color::White)
+            })
+            .render(row_chunks[1], buf);
+    }
+
+    if game.main_menu_popup {
+        let popup_block = Block::bordered().title(Line::from(" Danger ").bold());
+        let centered_area = area.centered(
+            Constraint::Length(widest_label as u16 * 2),
+            Constraint::Length(7),
+        );
+        Clear.render(centered_area, buf);
+        let popup_content = vec![
+            Line::default(),
+            Line::from(" Previous progress will be lost!").bold(),
+            Line::from(" * Press <Enter> again to proceed."),
+            Line::from(" * Press <Esc> to dismiss this modal."),
+        ];
+        Paragraph::new(popup_content)
+            .block(popup_block)
+            .render(centered_area, buf);
     }
 }
 
@@ -498,6 +583,11 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 fn get_instructions() -> Line<'static> {
     Line::from(" <Left/Right> main navigation, <Up/Down> inner navigation, <Enter> select, <Esc> return to main view , <q> quit ".to_string())
     .alignment(Alignment::Center)
+}
+
+fn get_menu_instructions() -> Line<'static> {
+    Line::from(" <Up/Down> change selection, <Enter> select, <q> quit ".to_string())
+        .alignment(Alignment::Center)
 }
 
 fn two_by_two_layout(area: Rect) -> [Rect; 4] {

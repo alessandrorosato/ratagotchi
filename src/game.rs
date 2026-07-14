@@ -39,6 +39,8 @@ pub struct Game {
     pub is_dark: bool,
     pub mini_game: MiniGame,
     is_mini_game_running: bool,
+    pub main_menu_index: MainMenuIndex,
+    pub main_menu_popup: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,9 +58,10 @@ pub struct Ratagotchi {
     pub last_update: DateTime<Utc>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub enum GameState {
     #[default]
+    Menu,
     CatchingUp,
     Running,
     Exiting,
@@ -85,6 +88,9 @@ struct Fitness {
 
 struct FitnessChange(f32);
 
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct MainMenuIndex(pub usize);
+
 impl Game {
     pub fn run(
         &mut self,
@@ -93,6 +99,21 @@ impl Game {
     ) -> io::Result<()> {
         while !self.exit {
             match self.state {
+                GameState::Menu => {
+                    match rx.recv() {
+                        Ok(trigger) => {
+                            if let Trigger::Input(key_event) = trigger {
+                                self.handle_key_event(key_event)
+                            }
+                        }
+                        Err(_) => {
+                            // TODO: logging
+                            println!("Receiver error.");
+                            break;
+                        }
+                    }
+                    terminal.draw(|frame| self.draw(frame))?;
+                }
                 GameState::CatchingUp => {
                     self.load();
                     terminal.draw(|frame| self.draw(frame))?;
@@ -140,42 +161,53 @@ impl Game {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.next_state(GameState::Exiting),
-            KeyCode::Tab => self.next_view(),
-            KeyCode::BackTab => self.prev_view(),
-            KeyCode::Enter => {
-                if self.jump_to_action() {
-                    self.do_action();
-                } else if self.highlighted_tab == GameView::Lights {
-                    self.is_dark = !self.is_dark;
-                } else if self.active_view != self.highlighted_tab {
-                    self.change_view();
-                } else {
-                    self.do_action();
+        if self.state == GameState::Menu {
+            match key_event.code {
+                KeyCode::Up => self.main_menu_index_decrease(),
+                KeyCode::Down => self.main_menu_index_increase(),
+                KeyCode::Enter => self.main_menu_action(),
+                KeyCode::Char('q') => self.exit = true,
+                KeyCode::Esc => self.main_menu_popup = false,
+                _ => {}
+            }
+        } else {
+            match key_event.code {
+                KeyCode::Char('q') => self.next_state(GameState::Exiting),
+                KeyCode::Tab => self.next_view(),
+                KeyCode::BackTab => self.prev_view(),
+                KeyCode::Enter => {
+                    if self.jump_to_action() {
+                        self.do_action();
+                    } else if self.highlighted_tab == GameView::Lights {
+                        self.is_dark = !self.is_dark;
+                    } else if self.active_view != self.highlighted_tab {
+                        self.change_view();
+                    } else {
+                        self.do_action();
+                    }
                 }
-            }
-            KeyCode::Esc => {
-                self.set_view(GameView::Main);
-                self.highlighted_tab = GameView::Main;
-            }
-            KeyCode::Up => self.change_choice(ChoiceDirection::Up),
-            KeyCode::Down => self.change_choice(ChoiceDirection::Down),
-            KeyCode::Right => {
-                if self.is_mini_game_running {
-                    self.change_minigame_pick();
-                } else if self.activity_ticks == 0 {
-                    self.next_view()
+                KeyCode::Esc => {
+                    self.set_view(GameView::Main);
+                    self.highlighted_tab = GameView::Main;
                 }
-            }
-            KeyCode::Left => {
-                if self.is_mini_game_running {
-                    self.change_minigame_pick();
-                } else if self.activity_ticks == 0 {
-                    self.prev_view();
+                KeyCode::Up => self.change_choice(ChoiceDirection::Up),
+                KeyCode::Down => self.change_choice(ChoiceDirection::Down),
+                KeyCode::Right => {
+                    if self.is_mini_game_running {
+                        self.change_minigame_pick();
+                    } else if self.activity_ticks == 0 {
+                        self.next_view()
+                    }
                 }
+                KeyCode::Left => {
+                    if self.is_mini_game_running {
+                        self.change_minigame_pick();
+                    } else if self.activity_ticks == 0 {
+                        self.prev_view();
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 
@@ -458,6 +490,40 @@ impl Game {
         let ticks_delta = time_delta * 2.0;
         self.tick_decay(ticks_delta);
         self.ratagotchi.fitness_decay(time_delta);
+    }
+
+    fn main_menu_index_increase(&mut self) {
+        if !self.main_menu_popup {
+            let current_index = self.main_menu_index.0;
+            let new_index = (current_index + 1).min(2);
+            self.main_menu_index = MainMenuIndex(new_index);
+        }
+    }
+
+    fn main_menu_index_decrease(&mut self) {
+        if !self.main_menu_popup {
+            let current_index = self.main_menu_index.0;
+            if current_index == 0 {
+                return;
+            }
+            let new_index = (current_index - 1).max(0);
+            self.main_menu_index = MainMenuIndex(new_index);
+        }
+    }
+
+    fn main_menu_action(&mut self) {
+        match self.main_menu_index.0 {
+            0 => self.next_state(GameState::CatchingUp),
+            1 => {
+                if self.main_menu_popup {
+                    self.next_state(GameState::Running)
+                } else {
+                    self.main_menu_popup = true
+                }
+            }
+            2 => self.exit = true,
+            _ => {}
+        }
     }
 }
 
