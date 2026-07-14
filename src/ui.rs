@@ -8,7 +8,7 @@ use ratatui::{
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Padding, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
 use tui_big_text::{BigText, PixelSize};
 
@@ -206,6 +206,23 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
                 Style::default().fg(Color::White)
             })
             .render(row_chunks[1], buf);
+    }
+
+    if game.main_menu_popup {
+        let popup_block = Block::bordered().title(" Danger ");
+        let centered_area = area.centered(
+            Constraint::Length(widest_label as u16 * 2),
+            Constraint::Length(6),
+        );
+        Clear.render(centered_area, buf);
+        let popup_content = vec![
+            Line::from("Previous progress will be lost!").bold(),
+            Line::from("* Press <Enter> again to proceed."),
+            Line::from("* Press <Esc> to dismiss this modal."),
+        ];
+        Paragraph::new(popup_content)
+            .block(popup_block)
+            .render(centered_area, buf);
     }
 }
 

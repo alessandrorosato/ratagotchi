@@ -40,6 +40,7 @@ pub struct Game {
     pub mini_game: MiniGame,
     is_mini_game_running: bool,
     pub main_menu_index: MainMenuIndex,
+    pub main_menu_popup: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -166,6 +167,7 @@ impl Game {
                 KeyCode::Down => self.main_menu_index_increase(),
                 KeyCode::Enter => self.main_menu_action(),
                 KeyCode::Char('q') => self.exit = true,
+                KeyCode::Esc => self.main_menu_popup = false,
                 _ => {}
             }
         } else {
@@ -508,7 +510,13 @@ impl Game {
     fn main_menu_action(&mut self) {
         match self.main_menu_index.0 {
             0 => self.next_state(GameState::CatchingUp),
-            1 => self.next_state(GameState::Running),
+            1 => {
+                if self.main_menu_popup {
+                    self.next_state(GameState::Running)
+                } else {
+                    self.main_menu_popup = true
+                }
+            }
             2 => self.exit = true,
             _ => {}
         }
