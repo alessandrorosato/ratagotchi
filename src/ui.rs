@@ -144,7 +144,7 @@ impl Widget for &Game {
 }
 
 fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
-    let title = Line::from(" Ratagotchi - Main Menu".bold());
+    let title = Line::from(" Ratagotchi - Main Menu ".bold());
     let vertical_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(20),
@@ -209,16 +209,17 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
     }
 
     if game.main_menu_popup {
-        let popup_block = Block::bordered().title(" Danger ");
+        let popup_block = Block::bordered().title(Line::from(" Danger ").bold());
         let centered_area = area.centered(
             Constraint::Length(widest_label as u16 * 2),
-            Constraint::Length(6),
+            Constraint::Length(7),
         );
         Clear.render(centered_area, buf);
         let popup_content = vec![
-            Line::from("Previous progress will be lost!").bold(),
-            Line::from("* Press <Enter> again to proceed."),
-            Line::from("* Press <Esc> to dismiss this modal."),
+            Line::default(),
+            Line::from(" Previous progress will be lost!").bold(),
+            Line::from(" * Press <Enter> again to proceed."),
+            Line::from(" * Press <Esc> to dismiss this modal."),
         ];
         Paragraph::new(popup_content)
             .block(popup_block)
