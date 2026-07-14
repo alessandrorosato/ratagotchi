@@ -164,7 +164,7 @@ impl Game {
             match key_event.code {
                 KeyCode::Up => self.main_menu_index_decrease(),
                 KeyCode::Down => self.main_menu_index_increase(),
-                KeyCode::Enter => {} // Do stuff
+                KeyCode::Enter => self.main_menu_action(),
                 KeyCode::Char('q') => self.exit = true,
                 _ => {}
             }
@@ -503,6 +503,15 @@ impl Game {
         }
         let new_index = (current_index - 1).max(0);
         self.main_menu_index = MainMenuIndex(new_index);
+    }
+
+    fn main_menu_action(&mut self) {
+        match self.main_menu_index.0 {
+            0 => self.next_state(GameState::CatchingUp),
+            1 => self.next_state(GameState::Running),
+            2 => self.exit = true,
+            _ => {}
+        }
     }
 }
 
