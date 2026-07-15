@@ -8,7 +8,7 @@ use ratatui::{
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
+    widgets::{Block, Clear, Padding, Paragraph, Widget},
 };
 use tui_big_text::{BigText, PixelSize};
 
@@ -778,7 +778,7 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_play(game: &Game, area: Rect, buf: &mut Buffer) {
-    let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(5)]).split(area);
+    let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(4)]).split(area);
     let [left, center, right] = center_and_columns_layout(layout[0]);
     let left_column = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).split(left);
     let right_column = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).split(right);
@@ -843,33 +843,53 @@ fn render_mini_game_play(game: &Game, areas: [Rect; 4], buf: &mut Buffer) {
     ])
     .split(areas[3]);
 
+    let first_choice_style = if selected_choice.0 {
+        Style::new().black()
+    } else {
+        Style::new().white()
+    };
+    let first_choice_block = Block::new()
+        .bg(if selected_choice.0 {
+            Color::White
+        } else {
+            Color::default()
+        })
+        .fg(if selected_choice.0 {
+            Color::Black
+        } else {
+            Color::default()
+        });
     BigText::builder()
         .pixel_size(PixelSize::Quadrant)
-        .style(Style::new().white())
+        .style(first_choice_style)
         .centered()
         .lines(["Higher".to_string().into()])
-        .block(if selected_choice.0 {
-            Block::new()
-                .borders(Borders::BOTTOM)
-                .border_type(BorderType::Thick)
-        } else {
-            Block::new()
-        })
+        .block(first_choice_block)
         .build()
         .render(choice_layout[1], buf);
 
+    let second_choice_style = if selected_choice.1 {
+        Style::new().black()
+    } else {
+        Style::new().white()
+    };
+    let second_choice_block = Block::new()
+        .bg(if selected_choice.1 {
+            Color::White
+        } else {
+            Color::default()
+        })
+        .fg(if selected_choice.1 {
+            Color::Black
+        } else {
+            Color::default()
+        });
     BigText::builder()
         .pixel_size(PixelSize::Quadrant)
-        .style(Style::new().white())
+        .style(second_choice_style)
         .centered()
         .lines(["Lower".to_string().into()])
-        .block(if selected_choice.1 {
-            Block::new()
-                .borders(Borders::BOTTOM)
-                .border_type(BorderType::Thick)
-        } else {
-            Block::new()
-        })
+        .block(second_choice_block)
         .build()
         .render(choice_layout[3], buf);
 }
