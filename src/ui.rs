@@ -581,7 +581,7 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 }
 
 fn get_instructions() -> Line<'static> {
-    Line::from(" <Left/Right> main navigation, <Up/Down> inner navigation, <Enter> select, <Esc> return to main view , <q> quit ".to_string())
+    Line::from(" <Left/Right> main navigation, <Up/Down> inner navigation, <Enter> select, <Esc> return to main view, <q> quit ".to_string())
     .alignment(Alignment::Center)
 }
 
