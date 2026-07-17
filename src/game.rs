@@ -421,11 +421,13 @@ impl Game {
     }
 
     fn change_minigame_pick(&mut self) {
-        self.mini_game.current_pick = if self.mini_game.current_pick == MiniGamePick::Higher {
-            MiniGamePick::Lower
-        } else {
-            MiniGamePick::Higher
-        };
+        if self.mini_game.second_number == 0 {
+            self.mini_game.current_pick = if self.mini_game.current_pick == MiniGamePick::Higher {
+                MiniGamePick::Lower
+            } else {
+                MiniGamePick::Higher
+            };
+        }
     }
 
     fn exit(&mut self) {
