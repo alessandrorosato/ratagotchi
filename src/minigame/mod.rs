@@ -6,7 +6,7 @@ use crate::config::{
 #[derive(Debug, Default, PartialEq)]
 pub struct MiniGame {
     pub round: usize,
-    pub scores: [Option<bool>; 3],
+    pub scores: [Option<bool>; MINIGAME_NUM_ROUNDS],
     pub first_number: usize,
     pub second_number: usize,
     pub current_pick: MiniGamePick,
@@ -34,6 +34,10 @@ impl MiniGame {
     }
 
     pub fn run(&mut self) -> Option<f32> {
+        // Force quit if all rounds have been played.
+        if self.scores.iter().all(Option::is_some) {
+            return self.end_game();
+        }
         self.check_current_round()
     }
 
