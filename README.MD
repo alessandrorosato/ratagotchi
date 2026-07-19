@@ -45,9 +45,9 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 - [ ] Improve navigation button (maybe more square-y).
 - [ ] Better bath "wave" (looks like a meatgrinder atm).
 - [ ] Low health/disease cue.
-- [ ] Play view:
+- [x] ~~Play view:~~
     - [x] ~~Lock choice once the second number is displayed.~~
-    - [ ] At the end of the final round, remove the frame still in Play view.
+    - [x] ~~At the end of the final round, remove the frame still in Play view.~~
 - [ ] Visual ratagotchi variants based on its weight.
 
 ### Misc
