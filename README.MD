@@ -34,10 +34,11 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 
 - [ ] Death conditions.
 - [ ] "Win" conditions.
-- [ ] Day/light cycle, sleep.
+- [ ] Day/night cycle, sleep.
     - [ ] Light and ratagotchi reaction.
 - [ ] Review all decay factors.
 - [ ] Something related to low discipline.
+- [ ] Actually implement dynamic bonus/malus multipliers.
 
 ### UI
 
@@ -49,11 +50,27 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
     - [x] ~~Lock choice once the second number is displayed.~~
     - [x] ~~At the end of the final round, remove the frame still in Play view.~~
 - [ ] Visual ratagotchi variants based on its weight.
+- [ ] Hall of fame or cemetery for past ratagotchis.
 
 ### Misc
 
 - [ ] Setup build jobs for releases.
 - [ ] Web build.
+
+## Roadmap
+
+Based on the above list of features, I came up with some sort of "road to 1.0.0". 
+
+- [ ] **0.1.0** Going public with barebone release binaries.
+- [ ] **0.2.0** UI rework: layouts refactoring and square-ish navigation buttons (UI).
+- [ ] **0.3.0** Better bath animation and low health indicator (UI).
+- [ ] **0.4.0** Visual variants based on weight (UI).
+- [ ] **0.5.0** Discipline consequences (Gameplay).
+- [ ] **0.6.0** Day/night cycle (UI/Gameplay).
+- [ ] **0.7.0** Decay factors review (Gameplay).
+- [ ] **0.8.0** Bonus/malus system (Gameplay).
+- [ ] **0.9.0** Win conditions (Gameplay).
+- [ ] **1.0.0** Death conditions (Gameplay).
 
 ## Disclaimer
 
