@@ -1,7 +1,6 @@
-use std::{io, path::PathBuf, sync::mpsc, thread, time::Duration};
+use std::{io, sync::mpsc, thread, time::Duration};
 
 use chrono::{DateTime, Utc};
-use directories::ProjectDirs;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::{
@@ -22,6 +21,7 @@ use crate::{
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
+    utils::get_storage_folder,
 };
 
 #[derive(Debug, Default)]
@@ -434,24 +434,8 @@ impl Game {
         self.exit = true;
     }
 
-    // Get application's data folder for savegames
-    // Linux:   /home/alice/.config/ratagotchi
-    // Windows: C:\Users\Alice\AppData\Roaming\ratagotchi
-    // macOS:   /Users/Alice/Library/Application Support/ratagotchi
-    fn get_storage_folder(&self) -> Result<PathBuf, Box<dyn std::error::Error>> {
-        if let Some(proj_dirs) = ProjectDirs::from("", "", "ratagotchi") {
-            let storage_folder = proj_dirs.data_dir();
-            if !storage_folder.to_path_buf().exists() {
-                std::fs::create_dir_all(storage_folder)?;
-            }
-            Ok(storage_folder.to_path_buf())
-        } else {
-            Err("Failed to get directories".to_string())?
-        }
-    }
-
     fn save(&mut self) {
-        match self.get_storage_folder() {
+        match get_storage_folder() {
             Ok(f) => {
                 self.ratagotchi.last_update = Utc::now();
                 let full_path = f.join("savegame.json");
@@ -471,7 +455,7 @@ impl Game {
     }
 
     fn load(&mut self) {
-        match self.get_storage_folder() {
+        match get_storage_folder() {
             Ok(f) => {
                 let full_path = f.join("savegame.json");
                 if let Ok(json_data) = std::fs::read(full_path) {
