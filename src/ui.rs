@@ -16,6 +16,7 @@ use crate::{
     config::RATAGOTCHI_ACTIVITY_DURATION,
     game::{Choice, Game, GameState},
     minigame::MiniGamePick,
+    utils::human_friendly_time_delta,
     widgets::ProgressBar,
 };
 
@@ -254,55 +255,6 @@ fn render_catching_up(game: &Game, area: Rect, buf: &mut Buffer) {
         .style(Style::new().white())
         .centered()
         .render(horizontal_layout[1], buf);
-}
-
-fn human_friendly_time_delta(time_delta: i64) -> String {
-    let days = time_delta / 86400;
-    let remaining_seconds = time_delta % 86400;
-    let hours = remaining_seconds / 3600;
-    let remaining_seconds = remaining_seconds % 3600;
-    let minutes = remaining_seconds / 60;
-    let seconds = remaining_seconds % 60;
-
-    let mut parts = Vec::new();
-    if days > 0 {
-        parts.push(format!("{} day{}", days, if days > 1 { "s" } else { "" }));
-    }
-    if hours > 0 {
-        parts.push(format!(
-            "{} hour{}",
-            hours,
-            if hours > 1 { "s" } else { "" }
-        ));
-    }
-    if minutes > 0 {
-        parts.push(format!(
-            "{} minute{}",
-            minutes,
-            if minutes > 1 { "s" } else { "" }
-        ));
-    }
-    if seconds > 0 && parts.is_empty() {
-        parts.push(format!(
-            "{} second{}",
-            seconds,
-            if seconds > 1 { "s" } else { "" }
-        ));
-    }
-
-    match parts.len() {
-        0 => "0 seconds".to_string(),
-        1 => parts[0].clone(),
-        _ => {
-            if let Some(last) = parts.pop() {
-                let rest = parts.join(", ");
-                format!("{} and {}", rest, last)
-            } else {
-                "Some time ago...".to_string()
-                // TODO: log this!
-            }
-        }
-    }
 }
 
 fn render_exiting(area: Rect, buf: &mut Buffer) {

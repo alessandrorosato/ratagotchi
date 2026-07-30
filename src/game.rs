@@ -1,6 +1,7 @@
 use std::{io, sync::mpsc, thread, time::Duration};
 
 use chrono::{DateTime, Utc};
+use log::{error, info};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::{
@@ -21,7 +22,7 @@ use crate::{
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
-    utils::get_storage_folder,
+    utils::{get_storage_folder, human_friendly_time_delta},
 };
 
 #[derive(Debug, Default)]
@@ -106,9 +107,8 @@ impl Game {
                                 self.handle_key_event(key_event)
                             }
                         }
-                        Err(_) => {
-                            // TODO: logging
-                            println!("Receiver error.");
+                        Err(e) => {
+                            error!("Receiver error: {}.", e);
                             break;
                         }
                     }
@@ -134,9 +134,8 @@ impl Game {
                                 self.back_to_main();
                             }
                         },
-                        Err(_) => {
-                            // TODO: logging
-                            println!("Receiver error.");
+                        Err(e) => {
+                            error!("Receiver error: {}.", e);
                             break;
                         }
                     }
@@ -153,6 +152,7 @@ impl Game {
                 }
             }
         }
+        info!("Stopping terminal interface.");
         Ok(())
     }
 
@@ -442,14 +442,14 @@ impl Game {
                 match serde_json::to_vec(&self.ratagotchi) {
                     Ok(data) => {
                         let _ = std::fs::write(full_path, data).inspect_err(|e| {
-                            log::error!("Error while writing save file: {}", e);
+                            error!("Error while writing save file: {}.", e);
                         });
                     }
-                    Err(e) => log::error!("Error while getting storage folder: {}", e),
+                    Err(e) => error!("Error while getting storage folder: {}.", e),
                 };
             }
             Err(e) => {
-                log::error!("Error while getting storage folder: {}", e);
+                error!("Error while getting storage folder: {}.", e);
             }
         }
     }
@@ -461,12 +461,12 @@ impl Game {
                 if let Ok(json_data) = std::fs::read(full_path) {
                     match serde_json::from_slice::<Ratagotchi>(&json_data) {
                         Ok(r) => self.ratagotchi = r,
-                        Err(e) => log::error!("Error while reading save file: {}", e),
+                        Err(e) => error!("Error while reading save file: {}.", e),
                     };
                 }
             }
             Err(e) => {
-                log::error!("Error while getting storage folder: {}", e);
+                error!("Error while getting storage folder: {}.", e);
             }
         }
     }
@@ -476,6 +476,11 @@ impl Game {
         let ticks_delta = time_delta * 2.0;
         self.tick_decay(ticks_delta);
         self.ratagotchi.fitness_decay(time_delta);
+        info!(
+            "Caught up {} ({} ticks).",
+            human_friendly_time_delta(time_delta as i64),
+            ticks_delta
+        );
     }
 
     fn main_menu_index_increase(&mut self) {
@@ -502,6 +507,7 @@ impl Game {
             0 => self.next_state(GameState::CatchingUp),
             1 => {
                 if self.main_menu_popup {
+                    info!("Starting a new game, save file discarded!");
                     self.next_state(GameState::Running)
                 } else {
                     self.main_menu_popup = true
@@ -523,13 +529,13 @@ pub fn handle_input_events(tx: mpsc::Sender<Trigger>) {
         match crossterm::event::read() {
             Ok(Event::Key(key_event)) => {
                 if let Err(e) = tx.send(Trigger::Input(key_event)) {
-                    log::error!("Failed to transmit key event: {}", e);
+                    error!("Failed to transmit key event: {}.", e);
                     break;
                 }
             }
             Ok(_) => {} // Discard all the other event types
             Err(e) => {
-                log::error!("Failed to read terminal event: {}", e);
+                error!("Failed to read terminal event: {}.", e);
             }
         }
     }
@@ -539,7 +545,7 @@ pub fn tick_lapse(tx: mpsc::Sender<Trigger>) {
     loop {
         thread::sleep(Duration::from_millis(500));
         if let Err(e) = tx.send(Trigger::Tick) {
-            log::error!("Failed to transmit tick: {}", e);
+            error!("Failed to transmit tick: {}.", e);
             break;
         }
     }
