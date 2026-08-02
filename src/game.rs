@@ -497,7 +497,7 @@ impl Game {
             if current_index == 0 {
                 return;
             }
-            let new_index = (current_index - 1).max(0);
+            let new_index = current_index - 1;
             self.main_menu_index = MainMenuIndex(new_index);
         }
     }
