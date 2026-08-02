@@ -1,0 +1,116 @@
+name: Multi-Platform Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        include:
+            - os: ubuntu-latest
+              binary-name: ${{ vars.BINARY_NAME }}  # Added in Settings > Secret and variables > Actions > Variables
+              artifact-name: ${{ vars.BINARY_NAME }}-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz
+
+            - os: windows-latest
+              binary-name: ${{ vars.BINARY_NAME }}.exe
+              artifact-name: ${{ vars.BINARY_NAME }}-${{ github.ref_name }}-x86_64-pc-windows-msvc.zip
+
+            - os: macos-latest
+              binary-name: ${{ vars.BINARY_NAME }}
+              artifact-name-intel: ${{ vars.BINARY_NAME }}-${{ github.ref_name }}-x86_64-apple-darwin.tar.gz
+              artifact-name-arm: ${{ vars.BINARY_NAME }}-${{ github.ref_name }}-aarch64-apple-darwin.tar.gz
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Setup Rust Toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+
+    - name: Echo Target Architecture
+      shell: bash
+      run: |
+        TARGET=$(rustc -vV | sed -n 's/host: //p')
+        echo "The default build target architecture is: $TARGET"
+
+    - name: Run Build (non-macOS)
+      if: matrix.os != 'macos-latest'
+      run: cargo build --release --verbose
+
+    - name: Run Build (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        echo "Building for os architecture."
+        cargo build --release --verbose
+        echo "Adding x86_64 target for cargo."
+        rustup target add x86_64-apple-darwin
+        echo "Building for x86_64 architecture."
+        cargo build --release --target x86_64-apple-darwin --verbose
+
+    - name: Package Binary (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: tar -czf ${{ matrix.artifact-name }} target/release/${{ matrix.binary-name }}
+
+    - name: Package Binary (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        tar -czf ${{ matrix.artifact-name-intel }} target/x86_64-apple-darwin/release/${{ matrix.binary-name }}
+        tar -czf ${{ matrix.artifact-name-arm }} target/release/${{ matrix.binary-name }}
+
+    - name: Package Binary (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: Compress-Archive -Path target\release\${{ matrix.binary-name }} -DestinationPath ${{ matrix.artifact-name }}
+
+    - name: Upload Compressed Artifact (non-macOS)
+      if: matrix.os != 'macos-latest'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ${{ matrix.artifact-name }}
+        if-no-files-found: error
+
+        
+    - name: Upload Compressed Artifact Intel (macOS)
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ matrix.artifact-name-intel }}
+        path: ${{ matrix.artifact-name-intel }}
+        if-no-files-found: error
+
+        
+    - name: Upload Compressed Artifact ARM (macOS)
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ matrix.artifact-name-arm }}
+        path: ${{ matrix.artifact-name-arm }}
+  
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v8
+      with:
+        path: ./release-assets
+        merge-multiple: true
+
+    - name: Publish Release and Assets
+      uses: softprops/action-gh-release@v3
+      with:
+        files: ./release-assets/*
+        generate_release_notes: true
