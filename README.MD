@@ -22,8 +22,21 @@ Different ways to take care of your ratagotchi:
 
 ## Installation
 
-Right now, you just have to clone the repo and build the project on your local. Binaries coming soon!
+### Build
 
+You can clone the repo and build the project on your local.
+
+```
+git clone https://github.com/alessandrorosato/ratagotchi.git
+cd ratagotchi
+cargo build --release
+```
+
+### Releases
+
+You can grab the latest release from the [releases page](https://github.com/alessandrorosato/ratagotchi/releases) or from the sidebar of the [repository homepage](https://github.com/alessandrorosato/ratagotchi).
+
+It will probably throw some security warnings. If you don't feel comfortable with running the binary you can build the project yourself as explained above.
 
 
 ## ToDo
@@ -62,7 +75,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 
 Based on the above list of features, I came up with some sort of "road to 1.0.0". 
 
-- [ ] **0.1.0** Going public with barebone release binaries.
+- [x] **0.1.0** Going public with barebone release binaries.
 - [ ] **0.2.0** UI rework: layouts refactoring and square-ish navigation items (UI).
 - [ ] **0.3.0** Better bath animation and low health indicator (UI).
 - [ ] **0.4.0** Visual variants based on weight (UI).
