@@ -43,7 +43,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 ### UI
 
 - [ ] Redefine layouts to keep positioning of all elements consistent.
-- [ ] Improve navigation button (maybe more square-y).
+- [ ] Improve navigation items (maybe more square-y).
 - [ ] Better bath "wave" (looks like a meatgrinder atm).
 - [ ] Low health/disease cue.
 - [x] ~~Play view:~~
@@ -54,15 +54,16 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 
 ### Misc
 
-- [ ] Setup build jobs for releases.
+- [x] Setup build jobs for releases.
 - [ ] Web build.
+- [ ] Crates.io?
 
 ## Roadmap
 
 Based on the above list of features, I came up with some sort of "road to 1.0.0". 
 
 - [ ] **0.1.0** Going public with barebone release binaries.
-- [ ] **0.2.0** UI rework: layouts refactoring and square-ish navigation buttons (UI).
+- [ ] **0.2.0** UI rework: layouts refactoring and square-ish navigation items (UI).
 - [ ] **0.3.0** Better bath animation and low health indicator (UI).
 - [ ] **0.4.0** Visual variants based on weight (UI).
 - [ ] **0.5.0** Discipline consequences (Gameplay).
