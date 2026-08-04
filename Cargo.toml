@@ -2,13 +2,20 @@
 name = "ratagotchi"
 version = "0.1.0"
 edition = "2024"
+description = "Take care of a cute rat living in your terminal!"
+license = "GPL-3.0-only"
+repository = "https://github.com/alessandrorosato/ratagotchi"
+readme = "README.MD"
+
 
 [dependencies]
 chrono = { version = "0.4.44", features = ["serde"] }
 directories = "6.0.0"
 image = "0.25.10"
 log = "0.4.30"
-log4rs = { version = "1.4.0", default-features = false, features = ["file_appender"] }
+log4rs = { version = "1.4.0", default-features = false, features = [
+    "file_appender",
+] }
 rand = "0.10.1"
 ratatui = "0.30.0"
 serde = { version = "1.0.228", features = ["derive"] }

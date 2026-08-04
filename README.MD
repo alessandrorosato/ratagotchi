@@ -67,7 +67,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 
 ### Misc
 
-- [x] Setup build jobs for releases.
+- [x] ~~Setup build jobs for releases.~~
 - [ ] Web build.
 - [ ] Crates.io?
 
