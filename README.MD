@@ -22,6 +22,20 @@ Different ways to take care of your ratagotchi:
 
 ## Installation
 
+### Releases
+
+You can grab the latest release from the [releases page](https://github.com/alessandrorosato/ratagotchi/releases) or from the sidebar of the [repository homepage](https://github.com/alessandrorosato/ratagotchi).
+
+It will probably throw some security warnings. If you don't feel comfortable with running the binary you can build the project yourself as explained below.
+
+### Cargo
+
+Ratagotchi is [available on crates.io](https://crates.io/crates/ratagotchi) and thus can be installed via `cargo`!
+
+```
+cargo install ratagotchi
+```
+
 ### Build
 
 You can clone the repo and build the project on your local.
@@ -31,12 +45,6 @@ git clone https://github.com/alessandrorosato/ratagotchi.git
 cd ratagotchi
 cargo build --release
 ```
-
-### Releases
-
-You can grab the latest release from the [releases page](https://github.com/alessandrorosato/ratagotchi/releases) or from the sidebar of the [repository homepage](https://github.com/alessandrorosato/ratagotchi).
-
-It will probably throw some security warnings. If you don't feel comfortable with running the binary you can build the project yourself as explained above.
 
 
 ## ToDo
@@ -69,7 +77,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 
 - [x] ~~Setup build jobs for releases.~~
 - [ ] Web build.
-- [ ] Crates.io?
+- [x] ~~Crates.io?~~
 
 ## Roadmap
 
