@@ -100,11 +100,23 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
         (tab_titles, selected_tab)
     };
 
-    let tab_constraints = vec![Constraint::Fill(1); 4];
+    let tab_constraints = vec![
+        Constraint::Fill(2),
+        Constraint::Length(16),
+        Constraint::Fill(1),
+        Constraint::Length(16),
+        Constraint::Fill(1),
+        Constraint::Length(16),
+        Constraint::Fill(1),
+        Constraint::Length(16),
+        Constraint::Fill(2),
+    ];
+
     let tab_chunks = Layout::horizontal(tab_constraints)
         .flex(Flex::SpaceEvenly)
         .split(area);
     for (i, title) in titles.iter().enumerate() {
+        let index_to_tab = 2 * i + 1;
         let is_selected = i + 1 == selected.unwrap_or_default();
         let block = Block::new()
             .bg(if is_selected {
@@ -119,7 +131,7 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
             });
         self::render_image_as_paragraph(
             format!("assets/navigation/{}.png", title),
-            tab_chunks[i],
+            tab_chunks[index_to_tab],
             VerticalPosition::Center,
             None,
         )
@@ -129,7 +141,7 @@ fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
             Style::default().fg(Color::White)
         })
         .block(block)
-        .render(tab_chunks[i], buf);
+        .render(tab_chunks[index_to_tab], buf);
     }
 }
 
@@ -287,9 +299,9 @@ fn render_exiting(area: Rect, buf: &mut Buffer) {
 fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     let title = Line::from(" Ratagotchi ".bold());
     let layout = Layout::vertical([
-        Constraint::Length(4),
+        Constraint::Length(5),
         Constraint::Fill(1),
-        Constraint::Length(4),
+        Constraint::Length(5),
     ])
     .spacing(1);
 
