@@ -64,7 +64,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 ### UI
 
 - [ ] Redefine layouts to keep positioning of all elements consistent.
-- [ ] Improve navigation items (maybe more square-y).
+- [x] ~~Improve navigation items (maybe more square-y).~~
 - [ ] Better bath "wave" (looks like a meatgrinder atm).
 - [ ] Low health/disease cue.
 - [x] ~~Play view:~~
