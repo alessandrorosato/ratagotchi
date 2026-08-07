@@ -42,6 +42,7 @@ pub struct Game {
     is_mini_game_running: bool,
     pub main_menu_index: MainMenuIndex,
     pub main_menu_popup: bool,
+    pub is_navigation_hidden: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -177,12 +178,14 @@ impl Game {
                 KeyCode::BackTab => self.prev_view(),
                 KeyCode::Enter => {
                     if self.jump_to_action() {
+                        self.is_navigation_hidden = true;
                         self.do_action();
                     } else if self.highlighted_tab == GameView::Lights {
                         self.is_dark = !self.is_dark;
                     } else if self.active_view != self.highlighted_tab {
                         self.change_view();
                     } else {
+                        self.is_navigation_hidden = true;
                         self.do_action();
                     }
                 }
@@ -263,6 +266,7 @@ impl Game {
         {
             self.ratagotchi.happiness += result;
             self.is_mini_game_running = false;
+            self.is_navigation_hidden = false;
             self.set_view(GameView::Main);
         }
     }
@@ -357,6 +361,7 @@ impl Game {
             self.active_view = GameView::default();
             self.highlighted_tab = GameView::default();
             self.is_action_over = false;
+            self.is_navigation_hidden = false;
         }
     }
 

@@ -72,6 +72,9 @@ impl GameView {
 }
 
 fn navigation_row(game: &Game, area: Rect, buf: &mut Buffer, is_top: bool) {
+    if game.is_navigation_hidden {
+        return;
+    }
     let (titles, selected) = if is_top {
         let tab_titles = vec![
             GameView::Feed.to_string(),
