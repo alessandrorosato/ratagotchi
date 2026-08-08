@@ -350,10 +350,10 @@ fn render_image_as_paragraph(
                 if let Some(frame) = frames.nth(f) {
                     frame.unwrap().into_buffer()
                 } else {
-                    panic!("Error during frame selection: {}", &path.to_lowercase());
+                    panic!("Error during frame selection: {}", path.to_lowercase());
                 }
             } else {
-                panic!("Can't open asset: {}", &path.to_lowercase());
+                panic!("Can't open asset: {}", path.to_lowercase());
             }
         }
         None => {
@@ -418,25 +418,16 @@ fn render_wave_over_image(
     let mut line_imgs = Vec::new();
     for path in [image_path, wave_path].iter() {
         let rgba_img = match frame {
-            Some(f) => {
-                if Path::new(&path).extension().and_then(|ext| ext.to_str()) == Some("gif") {
-                    let file = File::open(path).unwrap();
-                    let reader = BufReader::new(file);
-                    let decoder = GifDecoder::new(reader).unwrap();
-                    let mut frames = decoder.into_frames();
-                    let frame = frames.nth(f);
+            Some(f) if Path::new(&path).extension().and_then(|ext| ext.to_str()) == Some("gif") => {
+                let file = File::open(path).unwrap();
+                let reader = BufReader::new(file);
+                let decoder = GifDecoder::new(reader).unwrap();
+                let mut frames = decoder.into_frames();
+                let frame = frames.nth(f);
 
-                    frame.unwrap().unwrap().into_buffer()
-                } else {
-                    let image_reader = match ImageReader::open(path.to_lowercase()) {
-                        Ok(r) => r,
-                        Err(_) => panic!("Can't find asset: {}", path.to_lowercase()),
-                    };
-
-                    image_reader.decode().unwrap().into_rgba8()
-                }
+                frame.unwrap().unwrap().into_buffer()
             }
-            None => {
+            _ => {
                 let image_reader = match ImageReader::open(path.to_lowercase()) {
                     Ok(r) => r,
                     Err(_) => panic!("Can't find asset: {}", path.to_lowercase()),
