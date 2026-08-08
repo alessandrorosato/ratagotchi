@@ -326,7 +326,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Main => render_main(game, main, buf),
         GameView::Feed => render_feed(game, main, buf),
         GameView::Lights => render_main(game, main, buf),
-        GameView::Play => render_play(game, main, buf),
+        GameView::Play => render_play(game, (main, bottom), buf),
         GameView::Medicine => render_medicine(game, main, buf),
         GameView::Bath => render_bath(game, main, buf),
         GameView::Health => render_health(game, main, buf),
@@ -744,18 +744,15 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
     }
 }
 
-fn render_play(game: &Game, area: Rect, buf: &mut Buffer) {
-    let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(4)]).split(area);
-    let [left, center, right] = center_and_columns_layout(layout[0]);
+fn render_play(game: &Game, area: (Rect, Rect), buf: &mut Buffer) {
+    let [left, center, right] = center_and_columns_layout(area.0);
     let left_column = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).split(left);
     let right_column = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).split(right);
 
     match game.mini_game.phase {
-        crate::minigame::MiniGamePhase::Play => render_mini_game_play(
-            game,
-            [left_column[1], center, right_column[1], layout[1]],
-            buf,
-        ),
+        crate::minigame::MiniGamePhase::Play => {
+            render_mini_game_play(game, [left_column[1], center, right_column[1], area.1], buf)
+        }
         crate::minigame::MiniGamePhase::Post => {
             render_mini_game_post(game, [left_column[1], center, right_column[1]], buf)
         }
