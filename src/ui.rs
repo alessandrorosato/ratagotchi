@@ -49,6 +49,30 @@ enum VerticalPosition {
     Bottom,
 }
 
+impl VerticalPosition {
+    fn as_padding(&self, area_height: u16, img_line_count: usize) -> Padding {
+        let area_height_adjusted = if area_height > 2 {
+            area_height - 2
+        } else {
+            area_height
+        } as usize;
+        match self {
+            VerticalPosition::Center => {
+                let top_padding = if area_height_adjusted > img_line_count {
+                    (area_height_adjusted - img_line_count) / 2
+                } else {
+                    0
+                };
+                Padding::top(top_padding as u16)
+            }
+            VerticalPosition::Bottom => {
+                let top_padding = area_height_adjusted.saturating_sub(img_line_count);
+                Padding::top(top_padding as u16)
+            }
+        }
+    }
+}
+
 impl fmt::Display for GameView {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -371,32 +395,7 @@ fn render_image_as_paragraph(
 
     let lines = img_to_lines(&rgba_img);
 
-    let padding = match vertical_position {
-        VerticalPosition::Center => {
-            let area_height = if area.height > 2 {
-                area.height - 2
-            } else {
-                area.height
-            } as usize;
-            let line_count = lines.len();
-            let top_padding = if area_height > line_count {
-                (area_height - line_count) / 2
-            } else {
-                0
-            };
-            Padding::top(top_padding as u16)
-        }
-        VerticalPosition::Bottom => {
-            let area_height = if area.height > 2 {
-                area.height - 2
-            } else {
-                area.height
-            } as usize;
-            let line_count = lines.len();
-            let top_padding = area_height.saturating_sub(line_count);
-            Padding::top(top_padding as u16)
-        }
-    };
+    let padding = vertical_position.as_padding(area.height, lines.len());
 
     let block = Block::new().padding(padding);
 
@@ -443,33 +442,7 @@ fn render_wave_over_image(
     }
 
     let max_line_len = line_imgs.iter().map(|l| l.len()).max().unwrap_or(0);
-
-    let image_padding = match vertical_position {
-        VerticalPosition::Center => {
-            let area_height = if area.height > 2 {
-                area.height - 2
-            } else {
-                area.height
-            } as usize;
-            let line_count = max_line_len;
-            let top_padding = if area_height > line_count {
-                (area_height - line_count) / 2
-            } else {
-                0
-            };
-            Padding::top(top_padding as u16)
-        }
-        VerticalPosition::Bottom => {
-            let area_height = if area.height > 2 {
-                area.height - 2
-            } else {
-                area.height
-            } as usize;
-            let line_count = max_line_len;
-            let top_padding = area_height.saturating_sub(line_count);
-            Padding::top(top_padding as u16)
-        }
-    };
+    let image_padding = vertical_position.as_padding(area.height, max_line_len);
 
     let wave_position_index = activity_tick.abs_diff(4);
     let wave_position_h =
