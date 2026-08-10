@@ -184,7 +184,7 @@ impl Game {
                         self.is_dark = !self.is_dark;
                     } else if self.active_view != self.highlighted_tab {
                         self.change_view();
-                    } else {
+                    } else if self.highlighted_tab != GameView::Main {
                         self.is_navigation_hidden = true;
                         self.do_action();
                     }
