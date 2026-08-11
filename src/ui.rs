@@ -606,14 +606,27 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         // TODO: Add something animated "in the dark"
     } else {
         let [left, center, right] = center_and_columns_layout(area);
-        self::render_image_as_paragraph(
-            "assets/ratagotchi/idle.gif".to_string(),
-            center,
-            VerticalPosition::Center,
-            Some(game.tick_progress % 2),
-        )
-        .centered()
-        .render(center, buf);
+
+        // If sick, it coughs sometimes
+        if game.ratagotchi.health <= 60. && game.tick_progress.is_multiple_of(13) {
+            self::render_image_as_paragraph(
+                "assets/ratagotchi/cough.png".to_string(),
+                center,
+                VerticalPosition::Center,
+                None,
+            )
+            .centered()
+            .render(center, buf);
+        } else {
+            self::render_image_as_paragraph(
+                "assets/ratagotchi/idle.gif".to_string(),
+                center,
+                VerticalPosition::Center,
+                Some(game.tick_progress % 2),
+            )
+            .centered()
+            .render(center, buf);
+        }
 
         // Define the poop situation
         if game.ratagotchi.poop >= 50. {
