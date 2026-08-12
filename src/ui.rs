@@ -606,6 +606,10 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         // TODO: Add something animated "in the dark"
     } else {
         let [left, center, right] = center_and_columns_layout(area);
+        let left_column_layout =
+            Layout::vertical([Constraint::Length(8), Constraint::Fill(1)]).split(left);
+        let right_column_layout =
+            Layout::vertical([Constraint::Length(8), Constraint::Fill(1)]).split(right);
 
         // If sick, it coughs sometimes
         if game.ratagotchi.health <= 60. && game.tick_progress.is_multiple_of(13) {
@@ -628,27 +632,39 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
             .render(center, buf);
         }
 
+        // Badly sick, call an ambulance!
+        if game.ratagotchi.health <= 20. {
+            self::render_image_as_paragraph(
+                "assets/ambulance.gif".to_string(),
+                right_column_layout[0],
+                VerticalPosition::Center,
+                Some(game.tick_progress % 2),
+            )
+            .centered()
+            .render(right_column_layout[0], buf);
+        }
+
         // Define the poop situation
         if game.ratagotchi.poop >= 50. {
             self::render_image_as_paragraph(
                 "assets/poop.gif".to_string(),
-                left,
+                left_column_layout[1],
                 VerticalPosition::Bottom,
                 Some(game.tick_progress % 2),
             )
             .centered()
-            .render(left, buf);
+            .render(left_column_layout[1], buf);
         }
 
         if game.ratagotchi.poop >= 95. {
             self::render_image_as_paragraph(
                 "assets/poop.gif".to_string(),
-                right,
+                right_column_layout[1],
                 VerticalPosition::Center,
                 Some(game.tick_progress % 2),
             )
             .centered()
-            .render(right, buf);
+            .render(right_column_layout[1], buf);
         }
     }
 }
