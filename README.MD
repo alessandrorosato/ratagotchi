@@ -66,7 +66,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 - [x] ~~Redefine layouts to keep positioning of all elements consistent.~~
 - [x] ~~Improve navigation items (maybe more square-y).~~
 - [ ] Better bath "wave" (looks like a meatgrinder atm).
-- [ ] Low health/disease cue.
+- [x] ~~Low health/disease cue.~~
 - [x] ~~Play view:~~
     - [x] ~~Lock choice once the second number is displayed.~~
     - [x] ~~At the end of the final round, remove the frame still in Play view.~~
