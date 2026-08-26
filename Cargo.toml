@@ -1,6 +1,6 @@
 [package]
 name = "ratagotchi"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 description = "Take care of a cute rat living in your terminal!"
 authors = ["Alessandro Rosato <hello@alessandrorosato.com>"]
