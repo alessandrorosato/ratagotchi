@@ -614,7 +614,10 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         // If sick, it coughs sometimes
         if game.ratagotchi.health <= 60. && game.tick_progress.is_multiple_of(13) {
             self::render_image_as_paragraph(
-                "assets/ratagotchi/cough.png".to_string(),
+                format!(
+                    "assets/ratagotchi/cough{}.png",
+                    game.ratagotchi.fitness_suffix()
+                ),
                 center,
                 VerticalPosition::Center,
                 None,
@@ -623,7 +626,10 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
             .render(center, buf);
         } else {
             self::render_image_as_paragraph(
-                "assets/ratagotchi/idle.gif".to_string(),
+                format!(
+                    "assets/ratagotchi/idle{}.gif",
+                    game.ratagotchi.fitness_suffix()
+                ),
                 center,
                 VerticalPosition::Center,
                 Some(game.tick_progress % 2),
@@ -678,7 +684,10 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
 
         // Use the feeding item to run a short animation
         self::render_image_as_paragraph(
-            "assets/ratagotchi/eat.gif".to_string(),
+            format!(
+                "assets/ratagotchi/eat{}.gif",
+                game.ratagotchi.fitness_suffix()
+            ),
             view_layout[1],
             VerticalPosition::Center,
             Some(game.activity_ticks % 2),
@@ -755,11 +764,20 @@ fn render_play(game: &Game, area: (Rect, Rect), buf: &mut Buffer) {
 fn render_mini_game_play(game: &Game, areas: [Rect; 4], buf: &mut Buffer) {
     let (image, frame) = if game.mini_game.second_number == 0 {
         (
-            "assets/ratagotchi/game-idle.gif",
+            format!(
+                "assets/ratagotchi/game-idle{}.gif",
+                game.ratagotchi.fitness_suffix()
+            ),
             Some(game.tick_progress % 2),
         )
     } else {
-        ("assets/ratagotchi/game-showoff.png", None)
+        (
+            format!(
+                "assets/ratagotchi/game-showoff{}.png",
+                game.ratagotchi.fitness_suffix()
+            ),
+            None,
+        )
     };
     self::render_image_as_paragraph(image.to_string(), areas[1], VerticalPosition::Center, frame)
         .centered()
@@ -857,7 +875,10 @@ fn render_mini_game_post(game: &Game, areas: [Rect; 3], buf: &mut Buffer) {
     if let Some(value) = game.mini_game.scores[round_index] {
         if value {
             self::render_image_as_paragraph(
-                "assets/ratagotchi/game-result-1.png".to_string(),
+                format!(
+                    "assets/ratagotchi/game-result-1{}.png",
+                    game.ratagotchi.fitness_suffix()
+                ),
                 areas[1],
                 VerticalPosition::Center,
                 None,
@@ -866,7 +887,10 @@ fn render_mini_game_post(game: &Game, areas: [Rect; 3], buf: &mut Buffer) {
             .render(areas[1], buf);
         } else {
             self::render_image_as_paragraph(
-                "assets/ratagotchi/game-result-0.png".to_string(),
+                format!(
+                    "assets/ratagotchi/game-result-0{}.png",
+                    game.ratagotchi.fitness_suffix()
+                ),
                 areas[1],
                 VerticalPosition::Center,
                 None,
@@ -881,7 +905,10 @@ fn render_mini_game_post(game: &Game, areas: [Rect; 3], buf: &mut Buffer) {
 fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {
     let frame = if game.activity_ticks > 5 { 0 } else { 1 };
     self::render_image_as_paragraph(
-        "assets/ratagotchi/medicine.gif".to_string(),
+        format!(
+            "assets/ratagotchi/medicine{}.gif",
+            game.ratagotchi.fitness_suffix()
+        ),
         area,
         VerticalPosition::Center,
         Some(frame),
@@ -897,7 +924,10 @@ fn render_bath(game: &Game, area: Rect, buf: &mut Buffer) {
         1
     };
     self::render_wave_over_image(
-        "assets/ratagotchi/idle.gif".to_string(),
+        format!(
+            "assets/ratagotchi/idle{}.gif",
+            game.ratagotchi.fitness_suffix()
+        ),
         "assets/screen-wave.png".to_string(),
         area,
         VerticalPosition::Center,
@@ -980,7 +1010,10 @@ fn render_scold(game: &Game, area: Rect, buf: &mut Buffer) {
         1
     };
     self::render_image_as_paragraph(
-        "assets/ratagotchi/scold.gif".to_string(),
+        format!(
+            "assets/ratagotchi/scold{}.gif",
+            game.ratagotchi.fitness_suffix()
+        ),
         area,
         VerticalPosition::Center,
         Some(frame),

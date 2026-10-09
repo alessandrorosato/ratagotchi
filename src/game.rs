@@ -88,6 +88,12 @@ struct Fitness {
     last_update: DateTime<Utc>,
 }
 
+pub enum FitnessState {
+    Scrawny,
+    Balanced,
+    Chonky,
+}
+
 struct FitnessChange(f32);
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -616,12 +622,29 @@ impl Ratagotchi {
     }
 
     pub fn print_fitness(&self) -> String {
-        let fitness = if self.fitness.value < 0.75 {
-            "(scrawny)" // TODO: "↓" not supported by tui_bit_text, find a nicer solution or just change how fitness value is shown
+        let fitness = match self.fitness_state() {
+            FitnessState::Scrawny => "(scrawny)",
+            FitnessState::Balanced => "",
+            FitnessState::Chonky => "(chonky)",
+        };
+        fitness.to_string()
+    }
+
+    fn fitness_state(&self) -> FitnessState {
+        if self.fitness.value < 0.75 {
+            FitnessState::Scrawny
         } else if self.fitness.value > 1.25 {
-            "(chonky)" // "↑" not supported
+            FitnessState::Chonky
         } else {
-            ""
+            FitnessState::Balanced
+        }
+    }
+
+    pub fn fitness_suffix(&self) -> String {
+        let fitness = match self.fitness_state() {
+            FitnessState::Scrawny => "-scrawny",
+            FitnessState::Balanced => "",
+            FitnessState::Chonky => "-chonky",
         };
         fitness.to_string()
     }
