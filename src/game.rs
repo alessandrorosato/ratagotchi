@@ -60,6 +60,14 @@ pub struct Ratagotchi {
     pub last_update: DateTime<Utc>,
 }
 
+enum RatagotchiStats {
+    Hunger,
+    Health,
+    Happiness,
+    Discipline,
+    Poop,
+}
+
 #[derive(Debug, Default, PartialEq)]
 pub enum GameState {
     #[default]
@@ -270,7 +278,8 @@ impl Game {
         if self.is_mini_game_running
             && let Some(result) = self.mini_game.run()
         {
-            self.ratagotchi.happiness += result;
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Happiness, result);
             self.is_mini_game_running = false;
             self.is_navigation_hidden = false;
             self.set_view(GameView::Main);
@@ -289,20 +298,26 @@ impl Game {
 
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
-        self.ratagotchi.hunger = (self.ratagotchi.hunger - RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks)
-            .max(RATAGOTCHI_STAT_MIN_VALUE);
-        self.ratagotchi.health = (self.ratagotchi.health - RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks)
-            .max(RATAGOTCHI_STAT_MIN_VALUE);
-        self.ratagotchi.happiness = (self.ratagotchi.happiness
-            - RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger).min(50.) * ticks)
-            .max(RATAGOTCHI_STAT_MIN_VALUE);
-        self.ratagotchi.discipline = (self.ratagotchi.discipline
-            - RATAGOTCHI_DECAY_FACTOR_DISCIPLINE
+        self.ratagotchi.change_stats(
+            RatagotchiStats::Hunger,
+            -RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks,
+        );
+        self.ratagotchi.change_stats(
+            RatagotchiStats::Health,
+            -RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks,
+        );
+        self.ratagotchi.change_stats(
+            RatagotchiStats::Happiness,
+            -RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger).min(50.) * ticks,
+        );
+        self.ratagotchi.change_stats(
+            RatagotchiStats::Discipline,
+            -RATAGOTCHI_DECAY_FACTOR_DISCIPLINE
                 * (100. / self.ratagotchi.happiness).min(50.)
-                * ticks)
-            .max(RATAGOTCHI_STAT_MIN_VALUE);
-        self.ratagotchi.poop = (self.ratagotchi.poop + RATAGOTCHI_DECAY_FACTOR_POOP * ticks)
-            .min(RATAGOTCHI_STAT_MAX_VALUE);
+                * ticks,
+        );
+        self.ratagotchi
+            .change_stats(RatagotchiStats::Poop, RATAGOTCHI_DECAY_FACTOR_POOP * ticks);
     }
 
     pub fn update_stats(&mut self) {
@@ -392,15 +407,15 @@ impl Game {
                     (STAT_INCREASE_FOOD_RATFOOD, 5.0 * bonus, fitness_variation)
                 }
             };
-            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
-            self.ratagotchi.hunger =
-                (self.ratagotchi.hunger + hunger_restored).min(RATAGOTCHI_STAT_MAX_VALUE);
-            self.ratagotchi.happiness =
-                (self.ratagotchi.happiness + happiness_restored).min(RATAGOTCHI_STAT_MAX_VALUE);
+            self.reset_activity_ticks();
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Hunger, hunger_restored);
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Happiness, happiness_restored);
             self.ratagotchi.update_fitness(fitness_variation, 1);
         } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
             self.active_view = GameView::Bath;
-            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
+            self.reset_activity_ticks();
             self.ratagotchi.poop = RATAGOTCHI_STAT_MIN_VALUE;
             let happiness_restored = if self.ratagotchi.poop > 50.0 {
                 25.0 * bonus
@@ -409,18 +424,19 @@ impl Game {
             } else {
                 0.0
             };
-            self.ratagotchi.happiness =
-                (self.ratagotchi.happiness + happiness_restored).min(RATAGOTCHI_STAT_MAX_VALUE)
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Happiness, happiness_restored);
         } else if self.highlighted_tab == GameView::Medicine
             && self.active_view != GameView::Medicine
         {
             self.active_view = GameView::Medicine;
-            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
-            self.ratagotchi.health += 60.0;
+            self.reset_activity_ticks();
+            self.ratagotchi.change_stats(RatagotchiStats::Health, 60.0);
         } else if self.highlighted_tab == GameView::Scold && self.active_view != GameView::Scold {
             self.active_view = GameView::Scold;
-            self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
-            self.ratagotchi.discipline += 40.0;
+            self.reset_activity_ticks();
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Discipline, 40.0);
         } else if self.highlighted_tab == GameView::Play
             && self.active_view != GameView::Play
             && !self.is_mini_game_running
@@ -527,6 +543,10 @@ impl Game {
             2 => self.exit = true,
             _ => {}
         }
+    }
+
+    fn reset_activity_ticks(&mut self) {
+        self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
     }
 }
 
@@ -688,5 +708,30 @@ impl Ratagotchi {
             FitnessChange(-RATAGOTCHI_FITNESS_CHANGE_S),
             num_fitness_decays,
         );
+    }
+
+    fn change_stats(&mut self, which_stat: RatagotchiStats, variation: f32) {
+        match which_stat {
+            RatagotchiStats::Hunger => {
+                self.hunger = (self.hunger + variation)
+                    .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
+            }
+            RatagotchiStats::Health => {
+                self.health = (self.health + variation)
+                    .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
+            }
+            RatagotchiStats::Happiness => {
+                self.happiness = (self.happiness + variation)
+                    .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
+            }
+            RatagotchiStats::Discipline => {
+                self.discipline = (self.discipline + variation)
+                    .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
+            }
+            RatagotchiStats::Poop => {
+                self.poop = (self.poop + variation)
+                    .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
+            }
+        };
     }
 }
