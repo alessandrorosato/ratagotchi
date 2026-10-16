@@ -87,7 +87,7 @@ Based on the above list of features, I came up with some sort of "road to 1.0.0"
 - [x] **0.2.0** UI rework: layouts refactoring and square-ish navigation items (UI).
 - [x] **0.3.0** Better bath animation and low health indicator (UI).
 - [x] **0.4.0** Visual variants based on weight (UI).
-- [ ] **0.5.0** Discipline consequences (Gameplay).
+- [x] **0.5.0** Discipline consequences (Gameplay).
 - [ ] **0.6.0** Day/night cycle (UI/Gameplay).
 - [ ] **0.7.0** Decay factors review (Gameplay).
 - [ ] **0.8.0** Bonus/malus system (Gameplay).
