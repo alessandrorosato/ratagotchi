@@ -18,7 +18,8 @@ use crate::{
         RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
         RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
-        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -391,19 +392,21 @@ impl Game {
         if self.active_view == GameView::Feed {
             let (hunger_restored, happiness_restored, fitness_variation) = match self.choice {
                 Choice::Top => {
-                    let fitness_variation = if self.ratagotchi.hunger > 95.0 {
-                        FitnessChange(RATAGOTCHI_FITNESS_CHANGE_L)
-                    } else {
-                        FitnessChange(RATAGOTCHI_FITNESS_CHANGE_S)
-                    };
+                    let fitness_variation =
+                        if self.ratagotchi.hunger > RATAGOTCHI_STAT_SATED_THRESHOLD {
+                            FitnessChange(RATAGOTCHI_FITNESS_CHANGE_L)
+                        } else {
+                            FitnessChange(RATAGOTCHI_FITNESS_CHANGE_S)
+                        };
                     (STAT_INCREASE_FOOD_CHEESE, 10.0 * bonus, fitness_variation)
                 }
                 Choice::Bottom => {
-                    let fitness_variation = if self.ratagotchi.hunger > 90.0 {
-                        FitnessChange(RATAGOTCHI_FITNESS_CHANGE_S)
-                    } else {
-                        FitnessChange(0.0)
-                    };
+                    let fitness_variation =
+                        if self.ratagotchi.hunger > RATAGOTCHI_STAT_SATED_THRESHOLD {
+                            FitnessChange(RATAGOTCHI_FITNESS_CHANGE_S)
+                        } else {
+                            FitnessChange(0.0)
+                        };
                     (STAT_INCREASE_FOOD_RATFOOD, 5.0 * bonus, fitness_variation)
                 }
             };
@@ -435,8 +438,14 @@ impl Game {
         } else if self.highlighted_tab == GameView::Scold && self.active_view != GameView::Scold {
             self.active_view = GameView::Scold;
             self.reset_activity_ticks();
+            let happiness_hit = match self.ratagotchi.discipline > RATAGOTCHI_STAT_SATED_THRESHOLD {
+                true => -20.0,
+                false => -5.0,
+            };
             self.ratagotchi
                 .change_stats(RatagotchiStats::Discipline, 40.0);
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Happiness, happiness_hit);
         } else if self.highlighted_tab == GameView::Play
             && self.active_view != GameView::Play
             && !self.is_mini_game_running
