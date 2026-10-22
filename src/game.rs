@@ -14,12 +14,14 @@ use serde::{Deserialize, Serialize};
 use crate::{
     config::{
         GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BIRTH_WEIGHT_RANGE,
-        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
-        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
-        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
-        RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
-        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
-        STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_ENERGY,
+        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
+        RATAGOTCHI_DECAY_FACTOR_HUNGER, RATAGOTCHI_DECAY_FACTOR_POOP,
+        RATAGOTCHI_ENERGY_DROWSY_THRESHOLD, RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD,
+        RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
+        RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
+        RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD,
+        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -59,6 +61,14 @@ pub struct Ratagotchi {
     pub birth: DateTime<Utc>,
     pub age: f32,
     pub last_update: DateTime<Utc>,
+    #[serde(default = "default_energy")]
+    pub energy: f32,
+    #[serde(default)]
+    pub is_asleep: bool,
+}
+
+fn default_energy() -> f32 {
+    RATAGOTCHI_STAT_MAX_VALUE
 }
 
 enum RatagotchiStats {
@@ -67,6 +77,7 @@ enum RatagotchiStats {
     Happiness,
     Discipline,
     Poop,
+    Energy,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -192,16 +203,20 @@ impl Game {
                 KeyCode::Tab => self.next_view(),
                 KeyCode::BackTab => self.prev_view(),
                 KeyCode::Enter => {
-                    if self.jump_to_action() {
-                        self.is_navigation_hidden = true;
-                        self.do_action();
-                    } else if self.highlighted_tab == GameView::Lights {
-                        self.is_dark = !self.is_dark;
-                    } else if self.active_view != self.highlighted_tab {
-                        self.change_view();
-                    } else if self.highlighted_tab != GameView::Main {
-                        self.is_navigation_hidden = true;
-                        self.do_action();
+                    if self.ratagotchi.is_asleep && self.highlighted_tab.is_action() {
+                        // Block actions while ratagotchi sleeps
+                    } else {
+                        if self.jump_to_action() {
+                            self.is_navigation_hidden = true;
+                            self.do_action();
+                        } else if self.highlighted_tab == GameView::Lights {
+                            self.is_dark = !self.is_dark;
+                        } else if self.active_view != self.highlighted_tab {
+                            self.change_view();
+                        } else if self.highlighted_tab != GameView::Main {
+                            self.is_navigation_hidden = true;
+                            self.do_action();
+                        }
                     }
                 }
                 KeyCode::Esc => {
@@ -299,6 +314,7 @@ impl Game {
 
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
+        self.ratagotchi.update_sleep(ticks, self.is_dark);
         self.ratagotchi.change_stats(
             RatagotchiStats::Hunger,
             -RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks,
@@ -609,6 +625,8 @@ impl Default for Ratagotchi {
             birth: Utc::now(),
             age: RATAGOTCHI_STAT_MIN_VALUE,
             last_update: Utc::now(),
+            energy: RATAGOTCHI_STAT_MAX_VALUE,
+            is_asleep: false,
         }
     }
 }
@@ -741,6 +759,36 @@ impl Ratagotchi {
                 self.poop = (self.poop + variation)
                     .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
             }
+            RatagotchiStats::Energy => {
+                self.energy = (self.energy + variation)
+                    .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
+            }
         };
+    }
+
+    fn update_sleep(&mut self, ticks: f32, is_dark: bool) {
+        if self.is_asleep {
+            let recover = if is_dark {
+                RATAGOTCHI_RECOVERY_FACTOR_ENERGY
+            } else {
+                RATAGOTCHI_RECOVERY_FACTOR_ENERGY / 2.0
+            };
+            self.change_stats(RatagotchiStats::Energy, recover * ticks);
+            if self.energy >= RATAGOTCHI_STAT_MAX_VALUE
+                || (!is_dark && self.energy >= RATAGOTCHI_STAT_SATED_THRESHOLD)
+            {
+                self.is_asleep = false;
+            }
+        } else {
+            self.change_stats(
+                RatagotchiStats::Energy,
+                -RATAGOTCHI_DECAY_FACTOR_ENERGY * ticks,
+            );
+            if self.energy <= RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD
+                || (is_dark && self.energy <= RATAGOTCHI_ENERGY_DROWSY_THRESHOLD)
+            {
+                self.is_asleep = true;
+            }
+        }
     }
 }

@@ -34,6 +34,15 @@ pub enum GameView {
     Attention,
 }
 
+impl GameView {
+    pub fn is_action(&self) -> bool {
+        matches!(
+            self,
+            GameView::Feed | GameView::Play | GameView::Medicine | GameView::Bath | GameView::Scold
+        )
+    }
+}
+
 #[derive(Debug, Default)]
 pub enum RenderStats {
     #[default]
@@ -602,53 +611,70 @@ fn render_stats_hearts(value: f32, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
-    if game.is_dark {
-        // TODO: Add something animated "in the dark"
-    } else {
-        let [left, center, right] = center_and_columns_layout(area);
-        let left_column_layout =
-            Layout::vertical([Constraint::Length(8), Constraint::Fill(1)]).split(left);
-        let right_column_layout =
-            Layout::vertical([Constraint::Length(8), Constraint::Fill(1)]).split(right);
+    let [left, center, right] = center_and_columns_layout(area);
+    let left_column_layout =
+        Layout::vertical([Constraint::Length(8), Constraint::Fill(1)]).split(left);
+    let right_column_layout =
+        Layout::vertical([Constraint::Length(8), Constraint::Fill(1)]).split(right);
 
+    // Badly sick, call an ambulance!
+    if game.ratagotchi.health <= 20. {
+        self::render_image_as_paragraph(
+            "assets/ambulance.gif".to_string(),
+            right_column_layout[0],
+            VerticalPosition::Center,
+            Some(game.tick_progress % 2),
+        )
+        .centered()
+        .render(right_column_layout[0], buf);
+    }
+
+    if game.is_dark {
+        let asset_path = if game.ratagotchi.is_asleep {
+            "assets/ratagotchi/sleep-dark.gif".to_string()
+        } else {
+            "assets/ratagotchi/idle-dark.gif".to_string()
+        };
+        self::render_image_as_paragraph(
+            asset_path,
+            center,
+            VerticalPosition::Center,
+            Some(game.tick_progress % 2),
+        )
+        .centered()
+        .render(center, buf);
+    } else {
+        let (asset_path, frame) = if game.ratagotchi.is_asleep {
+            (
+                format!(
+                    "assets/ratagotchi/sleep{}.gif",
+                    game.ratagotchi.fitness_suffix()
+                ),
+                Some(game.tick_progress % 2),
+            )
+        } else
         // If sick, it coughs sometimes
         if game.ratagotchi.health <= 60. && game.tick_progress.is_multiple_of(13) {
-            self::render_image_as_paragraph(
+            (
                 format!(
                     "assets/ratagotchi/cough{}.png",
                     game.ratagotchi.fitness_suffix()
                 ),
-                center,
-                VerticalPosition::Center,
                 None,
             )
-            .centered()
-            .render(center, buf);
         } else {
-            self::render_image_as_paragraph(
+            (
                 format!(
                     "assets/ratagotchi/idle{}.gif",
                     game.ratagotchi.fitness_suffix()
                 ),
-                center,
-                VerticalPosition::Center,
                 Some(game.tick_progress % 2),
             )
+        };
+
+        self::render_image_as_paragraph(asset_path, center, VerticalPosition::Center, frame)
             .centered()
             .render(center, buf);
-        }
-
-        // Badly sick, call an ambulance!
-        if game.ratagotchi.health <= 20. {
-            self::render_image_as_paragraph(
-                "assets/ambulance.gif".to_string(),
-                right_column_layout[0],
-                VerticalPosition::Center,
-                Some(game.tick_progress % 2),
-            )
-            .centered()
-            .render(right_column_layout[0], buf);
-        }
 
         // Define the poop situation
         if game.ratagotchi.poop >= 50. {

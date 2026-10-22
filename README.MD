@@ -72,6 +72,7 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
     - [x] ~~At the end of the final round, remove the frame still in Play view.~~
 - [x] ~~Visual ratagotchi variants based on its weight.~~
 - [ ] Hall of fame or cemetery for past ratagotchis.
+- [ ] Better sleep animations.
 
 ### Misc
 
