@@ -21,8 +21,9 @@ use crate::{
         RATAGOTCHI_ENERGY_DROWSY_THRESHOLD, RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD,
         RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
-        RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD,
-        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_SLEEP_DECAY_MULTIPLIER, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
+        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -318,10 +319,16 @@ impl Game {
 
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
+        let decay_multiplier = if self.ratagotchi.is_asleep {
+            // Slower metabolism while asleep
+            RATAGOTCHI_SLEEP_DECAY_MULTIPLIER
+        } else {
+            1.0
+        };
         self.ratagotchi.update_sleep(ticks);
         self.ratagotchi.change_stats(
             RatagotchiStats::Hunger,
-            -RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks,
+            -RATAGOTCHI_DECAY_FACTOR_HUNGER * decay_multiplier * ticks,
         );
         self.ratagotchi.change_stats(
             RatagotchiStats::Health,
@@ -337,8 +344,10 @@ impl Game {
                 * (100. / self.ratagotchi.happiness).min(50.)
                 * ticks,
         );
-        self.ratagotchi
-            .change_stats(RatagotchiStats::Poop, RATAGOTCHI_DECAY_FACTOR_POOP * ticks);
+        self.ratagotchi.change_stats(
+            RatagotchiStats::Poop,
+            RATAGOTCHI_DECAY_FACTOR_POOP * decay_multiplier * ticks,
+        );
     }
 
     pub fn update_stats(&mut self) {
