@@ -17,6 +17,7 @@ use crate::{
         RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_ENERGY,
         RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
         RATAGOTCHI_DECAY_FACTOR_HUNGER, RATAGOTCHI_DECAY_FACTOR_POOP,
+        RATAGOTCHI_ENERGY_COST_OVEREAT, RATAGOTCHI_ENERGY_COST_PLAY,
         RATAGOTCHI_ENERGY_DROWSY_THRESHOLD, RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD,
         RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
@@ -296,6 +297,8 @@ impl Game {
         {
             self.ratagotchi
                 .change_stats(RatagotchiStats::Happiness, result);
+            self.ratagotchi
+                .change_stats(RatagotchiStats::Energy, -RATAGOTCHI_ENERGY_COST_PLAY);
             self.is_mini_game_running = false;
             self.is_navigation_hidden = false;
             self.set_view(GameView::Main);
@@ -429,6 +432,10 @@ impl Game {
             self.reset_activity_ticks();
             self.ratagotchi
                 .change_stats(RatagotchiStats::Hunger, hunger_restored);
+            if self.ratagotchi.hunger >= RATAGOTCHI_STAT_MAX_VALUE {
+                self.ratagotchi
+                    .change_stats(RatagotchiStats::Energy, -RATAGOTCHI_ENERGY_COST_OVEREAT);
+            }
             self.ratagotchi
                 .change_stats(RatagotchiStats::Happiness, happiness_restored);
             self.ratagotchi.update_fitness(fitness_variation, 1);
