@@ -24,6 +24,7 @@ pub const RATAGOTCHI_ENERGY_COST_OVEREAT: f32 = 10.0;
 pub const GAME_AUTOSAVE_FREQUENCY: usize = 10; // Ticks between autosaves.
 pub const STAT_INCREASE_FOOD_CHEESE: f32 = 30.0;
 pub const STAT_INCREASE_FOOD_RATFOOD: f32 = 45.0;
+pub const GAME_CATCHUP_CHUNK_TICKS: f32 = 120.0; // Catchup in chunks to simulate sleep cycles
 
 // Play (minigame)
 pub const MINIGAME_NUM_ROUNDS: usize = 3;

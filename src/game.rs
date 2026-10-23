@@ -13,11 +13,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{
-        GAME_AUTOSAVE_FREQUENCY, RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BIRTH_WEIGHT_RANGE,
-        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_ENERGY,
-        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
-        RATAGOTCHI_DECAY_FACTOR_HUNGER, RATAGOTCHI_DECAY_FACTOR_POOP,
-        RATAGOTCHI_ENERGY_COST_OVEREAT, RATAGOTCHI_ENERGY_COST_PLAY,
+        GAME_AUTOSAVE_FREQUENCY, GAME_CATCHUP_CHUNK_TICKS, RATAGOTCHI_ACTIVITY_DURATION,
+        RATAGOTCHI_BIRTH_WEIGHT_RANGE, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
+        RATAGOTCHI_DECAY_FACTOR_ENERGY, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
+        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
+        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_ENERGY_COST_OVEREAT, RATAGOTCHI_ENERGY_COST_PLAY,
         RATAGOTCHI_ENERGY_DROWSY_THRESHOLD, RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD,
         RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
@@ -545,7 +545,12 @@ impl Game {
     fn catchup(&mut self) {
         let time_delta = (Utc::now() - self.ratagotchi.last_update).as_seconds_f32();
         let ticks_delta = time_delta * 2.0;
-        self.tick_decay(ticks_delta);
+        let mut remaining_ticks = ticks_delta;
+        while remaining_ticks > 0.0 {
+            let chunk = remaining_ticks.min(GAME_CATCHUP_CHUNK_TICKS);
+            self.tick_decay(chunk);
+            remaining_ticks -= chunk;
+        }
         self.ratagotchi.fitness_decay(time_delta);
         info!(
             "Caught up {} ({} ticks).",
