@@ -780,6 +780,10 @@ impl Ratagotchi {
             let recover = if self.is_dark {
                 RATAGOTCHI_RECOVERY_FACTOR_ENERGY
             } else {
+                self.change_stats(
+                    RatagotchiStats::Happiness,
+                    -RATAGOTCHI_DECAY_FACTOR_HAPPINESS * ticks,
+                );
                 RATAGOTCHI_RECOVERY_FACTOR_ENERGY / 2.0
             };
             self.change_stats(RatagotchiStats::Energy, recover * ticks);
