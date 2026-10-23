@@ -41,7 +41,6 @@ pub struct Game {
     pub choice: Choice,
     pub stats_screen: RenderStats,
     pub is_action_over: bool,
-    pub is_dark: bool,
     pub mini_game: MiniGame,
     is_mini_game_running: bool,
     pub main_menu_index: MainMenuIndex,
@@ -66,6 +65,8 @@ pub struct Ratagotchi {
     pub energy: f32,
     #[serde(default)]
     pub is_asleep: bool,
+    #[serde(default)]
+    pub is_dark: bool,
 }
 
 fn default_energy() -> f32 {
@@ -211,7 +212,7 @@ impl Game {
                             self.is_navigation_hidden = true;
                             self.do_action();
                         } else if self.highlighted_tab == GameView::Lights {
-                            self.is_dark = !self.is_dark;
+                            self.ratagotchi.is_dark = !self.ratagotchi.is_dark;
                         } else if self.active_view != self.highlighted_tab {
                             self.change_view();
                         } else if self.highlighted_tab != GameView::Main {
@@ -317,7 +318,7 @@ impl Game {
 
     // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
-        self.ratagotchi.update_sleep(ticks, self.is_dark);
+        self.ratagotchi.update_sleep(ticks);
         self.ratagotchi.change_stats(
             RatagotchiStats::Hunger,
             -RATAGOTCHI_DECAY_FACTOR_HUNGER * ticks,
@@ -634,6 +635,7 @@ impl Default for Ratagotchi {
             last_update: Utc::now(),
             energy: RATAGOTCHI_STAT_MAX_VALUE,
             is_asleep: false,
+            is_dark: false,
         }
     }
 }
@@ -773,16 +775,16 @@ impl Ratagotchi {
         };
     }
 
-    fn update_sleep(&mut self, ticks: f32, is_dark: bool) {
+    fn update_sleep(&mut self, ticks: f32) {
         if self.is_asleep {
-            let recover = if is_dark {
+            let recover = if self.is_dark {
                 RATAGOTCHI_RECOVERY_FACTOR_ENERGY
             } else {
                 RATAGOTCHI_RECOVERY_FACTOR_ENERGY / 2.0
             };
             self.change_stats(RatagotchiStats::Energy, recover * ticks);
             if self.energy >= RATAGOTCHI_STAT_MAX_VALUE
-                || (!is_dark && self.energy >= RATAGOTCHI_STAT_SATED_THRESHOLD)
+                || (!self.is_dark && self.energy >= RATAGOTCHI_STAT_SATED_THRESHOLD)
             {
                 self.is_asleep = false;
             }
@@ -792,7 +794,7 @@ impl Ratagotchi {
                 -RATAGOTCHI_DECAY_FACTOR_ENERGY * ticks,
             );
             if self.energy <= RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD
-                || (is_dark && self.energy <= RATAGOTCHI_ENERGY_DROWSY_THRESHOLD)
+                || (self.is_dark && self.energy <= RATAGOTCHI_ENERGY_DROWSY_THRESHOLD)
             {
                 self.is_asleep = true;
             }

@@ -629,7 +629,7 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         .render(right_column_layout[0], buf);
     }
 
-    if game.is_dark {
+    if game.ratagotchi.is_dark {
         let asset_path = if game.ratagotchi.is_asleep {
             "assets/ratagotchi/sleep-dark.gif".to_string()
         } else {
