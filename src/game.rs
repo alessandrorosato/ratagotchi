@@ -325,7 +325,9 @@ impl Game {
         } else {
             1.0
         };
-        self.ratagotchi.update_sleep(ticks);
+        // Don't fall asleep while playing
+        let can_fall_asleep = !self.is_mini_game_running && self.activity_ticks == 0;
+        self.ratagotchi.update_sleep(ticks, can_fall_asleep);
         self.ratagotchi.change_stats(
             RatagotchiStats::Hunger,
             -RATAGOTCHI_DECAY_FACTOR_HUNGER * decay_multiplier * ticks,
@@ -784,7 +786,7 @@ impl Ratagotchi {
         };
     }
 
-    fn update_sleep(&mut self, ticks: f32) {
+    fn update_sleep(&mut self, ticks: f32, can_fall_asleep: bool) {
         if self.is_asleep {
             let recover = if self.is_dark {
                 RATAGOTCHI_RECOVERY_FACTOR_ENERGY
@@ -806,8 +808,9 @@ impl Ratagotchi {
                 RatagotchiStats::Energy,
                 -RATAGOTCHI_DECAY_FACTOR_ENERGY * ticks,
             );
-            if self.energy <= RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD
-                || (self.is_dark && self.energy <= RATAGOTCHI_ENERGY_DROWSY_THRESHOLD)
+            if can_fall_asleep
+                && (self.energy <= RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD
+                    || (self.is_dark && self.energy <= RATAGOTCHI_ENERGY_DROWSY_THRESHOLD))
             {
                 self.is_asleep = true;
             }
