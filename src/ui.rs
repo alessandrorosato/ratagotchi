@@ -38,7 +38,7 @@ impl GameView {
     pub fn is_action(&self) -> bool {
         matches!(
             self,
-            GameView::Feed | GameView::Play | GameView::Medicine | GameView::Bath | GameView::Scold
+            GameView::Feed | GameView::Play | GameView::Bath | GameView::Scold
         )
     }
 }

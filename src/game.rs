@@ -470,6 +470,7 @@ impl Game {
             self.active_view = GameView::Medicine;
             self.reset_activity_ticks();
             self.ratagotchi.change_stats(RatagotchiStats::Health, 60.0);
+            self.ratagotchi.is_asleep = false;
         } else if self.highlighted_tab == GameView::Scold && self.active_view != GameView::Scold {
             self.active_view = GameView::Scold;
             self.reset_activity_ticks();
