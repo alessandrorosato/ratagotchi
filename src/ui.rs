@@ -13,7 +13,7 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 
 use crate::{
-    config::RATAGOTCHI_ACTIVITY_DURATION,
+    config::{RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_ENERGY_DROWSY_THRESHOLD},
     game::{Choice, Game, GameState},
     minigame::MiniGamePick,
     utils::human_friendly_time_delta,
@@ -655,6 +655,18 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         } else
         // If sick, it coughs sometimes
         if game.ratagotchi.health <= 60. && game.tick_progress.is_multiple_of(13) {
+            (
+                format!(
+                    "assets/ratagotchi/drowsy{}.png",
+                    game.ratagotchi.fitness_suffix()
+                ),
+                None,
+            )
+        } else
+        // If drowsy, it dozes off sometimes
+        if game.ratagotchi.energy <= RATAGOTCHI_ENERGY_DROWSY_THRESHOLD
+            && game.tick_progress.is_multiple_of(7)
+        {
             (
                 format!(
                     "assets/ratagotchi/cough{}.png",
