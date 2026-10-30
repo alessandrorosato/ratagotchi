@@ -157,7 +157,7 @@ impl Game {
                             Trigger::Tick => {
                                 self.update_stats();
                                 self.ratagotchi.fitness_decay(
-                                    (self.ratagotchi.fitness.last_update - Utc::now())
+                                    (Utc::now() - self.ratagotchi.fitness.last_update)
                                         .as_seconds_f32(),
                                 );
                                 self.tick_increase();
