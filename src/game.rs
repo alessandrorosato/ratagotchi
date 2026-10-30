@@ -454,7 +454,6 @@ impl Game {
         } else if self.highlighted_tab == GameView::Bath && self.active_view != GameView::Bath {
             self.active_view = GameView::Bath;
             self.reset_activity_ticks();
-            self.ratagotchi.poop = RATAGOTCHI_STAT_MIN_VALUE;
             let happiness_restored = if self.ratagotchi.poop > 50.0 {
                 25.0 * bonus
             } else if self.ratagotchi.poop > 10.0 {
@@ -462,6 +461,7 @@ impl Game {
             } else {
                 0.0
             };
+            self.ratagotchi.poop = RATAGOTCHI_STAT_MIN_VALUE;
             self.ratagotchi
                 .change_stats(RatagotchiStats::Happiness, happiness_restored);
         } else if self.highlighted_tab == GameView::Medicine
