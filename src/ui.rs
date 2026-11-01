@@ -657,7 +657,7 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         if game.ratagotchi.health <= 60. && game.tick_progress.is_multiple_of(13) {
             (
                 format!(
-                    "assets/ratagotchi/drowsy{}.png",
+                    "assets/ratagotchi/cough{}.png",
                     game.ratagotchi.fitness_suffix()
                 ),
                 None,
@@ -669,7 +669,7 @@ fn render_main(game: &Game, area: Rect, buf: &mut Buffer) {
         {
             (
                 format!(
-                    "assets/ratagotchi/cough{}.png",
+                    "assets/ratagotchi/drowsy{}.png",
                     game.ratagotchi.fitness_suffix()
                 ),
                 None,
