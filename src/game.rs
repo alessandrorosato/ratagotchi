@@ -17,13 +17,13 @@ use crate::{
         RATAGOTCHI_BIRTH_WEIGHT_RANGE, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
         RATAGOTCHI_DECAY_FACTOR_ENERGY, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
         RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
-        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_ENERGY_COST_OVEREAT, RATAGOTCHI_ENERGY_COST_PLAY,
-        RATAGOTCHI_ENERGY_DROWSY_THRESHOLD, RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD,
-        RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
-        RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
-        RATAGOTCHI_SLEEP_DECAY_MULTIPLIER, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
-        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
-        STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_DECAY_NEGLECT_CAP, RATAGOTCHI_ENERGY_COST_OVEREAT,
+        RATAGOTCHI_ENERGY_COST_PLAY, RATAGOTCHI_ENERGY_DROWSY_THRESHOLD,
+        RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD, RATAGOTCHI_FITNESS_CHANGE_L,
+        RATAGOTCHI_FITNESS_CHANGE_S, RATAGOTCHI_FITNESS_DECAY_INTERVAL,
+        RATAGOTCHI_RECOVERY_FACTOR_ENERGY, RATAGOTCHI_SLEEP_DECAY_MULTIPLIER,
+        RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD,
+        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -314,7 +314,6 @@ impl Game {
         false
     }
 
-    // TODO: I just threw random factors here, it probably needs a second look
     pub fn tick_decay(&mut self, ticks: f32) {
         let decay_multiplier = if self.ratagotchi.is_asleep {
             // Slower metabolism while asleep
@@ -335,12 +334,14 @@ impl Game {
         );
         self.ratagotchi.change_stats(
             RatagotchiStats::Happiness,
-            -RATAGOTCHI_DECAY_FACTOR_HAPPINESS * (100. / self.ratagotchi.hunger).min(50.) * ticks,
+            -RATAGOTCHI_DECAY_FACTOR_HAPPINESS
+                * (100. / self.ratagotchi.hunger).min(RATAGOTCHI_DECAY_NEGLECT_CAP)
+                * ticks,
         );
         self.ratagotchi.change_stats(
             RatagotchiStats::Discipline,
             -RATAGOTCHI_DECAY_FACTOR_DISCIPLINE
-                * (100. / self.ratagotchi.happiness).min(50.)
+                * (100. / self.ratagotchi.happiness).min(RATAGOTCHI_DECAY_NEGLECT_CAP)
                 * ticks,
         );
         self.ratagotchi.change_stats(
