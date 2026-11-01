@@ -55,9 +55,9 @@ There's a bunch of stuff still missing, here's a definitely-not-exhaustive list 
 
 - [ ] Death conditions.
 - [ ] "Win" conditions.
-- [x] Day/night cycle, sleep.
-    - [x] Light and ratagotchi reaction.
-- [ ] Review all decay factors.
+- [x] ~~Day/night cycle, sleep.~~
+    - [x] ~~Light and ratagotchi reaction.~~
+- [x] ~~Review all decay factors.~~
 - [ ] Something related to low discipline.
 - [ ] Actually implement dynamic bonus/malus multipliers.
 
@@ -90,7 +90,7 @@ Based on the above list of features, I came up with some sort of "road to 1.0.0"
 - [x] **0.4.0** Visual variants based on weight (UI).
 - [x] **0.5.0** Discipline consequences (Gameplay).
 - [x] **0.6.0** Day/night cycle (UI/Gameplay).
-- [ ] **0.7.0** Decay factors review (Gameplay).
+- [x] **0.7.0** Decay factors review (Gameplay).
 - [ ] **0.8.0** Bonus/malus system (Gameplay).
 - [ ] **0.9.0** Win conditions (Gameplay).
 - [ ] **1.0.0** Death conditions (Gameplay).
