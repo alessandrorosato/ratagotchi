@@ -720,33 +720,47 @@ fn render_feed(game: &Game, area: Rect, buf: &mut Buffer) {
         let left_column =
             Layout::vertical([Constraint::Min(16), Constraint::Fill(1)]).split(view_layout[0]);
 
-        // Use the feeding item to run a short animation
-        self::render_image_as_paragraph(
-            format!(
-                "assets/ratagotchi/eat{}.gif",
-                game.ratagotchi.fitness_suffix()
-            ),
-            view_layout[1],
-            VerticalPosition::Center,
-            Some(game.activity_ticks % 2),
-        )
-        .centered()
-        .render(view_layout[1], buf);
-
-        // Food being chopped away
-        let food_asset = if game.choice == Choice::Top {
-            "assets/cheese-eat.gif"
+        if game.is_refusing {
+            self::render_image_as_paragraph(
+                format!(
+                    "assets/ratagotchi/refusal{}.gif",
+                    game.ratagotchi.fitness_suffix()
+                ),
+                area,
+                VerticalPosition::Center,
+                Some(game.tick_progress % 2),
+            )
+            .centered()
+            .render(area, buf);
         } else {
-            "assets/ratfood-eat.gif"
-        };
-        self::render_image_as_paragraph(
-            food_asset.to_string(),
-            left_column[0],
-            VerticalPosition::Center,
-            Some(4 - (game.activity_ticks / 2)),
-        )
-        .centered()
-        .render(left_column[0], buf);
+            // Use the feeding item to run a short animation
+            self::render_image_as_paragraph(
+                format!(
+                    "assets/ratagotchi/eat{}.gif",
+                    game.ratagotchi.fitness_suffix()
+                ),
+                view_layout[1],
+                VerticalPosition::Center,
+                Some(game.activity_ticks % 2),
+            )
+            .centered()
+            .render(view_layout[1], buf);
+
+            // Food being chopped away
+            let food_asset = if game.choice == Choice::Top {
+                "assets/cheese-eat.gif"
+            } else {
+                "assets/ratfood-eat.gif"
+            };
+            self::render_image_as_paragraph(
+                food_asset.to_string(),
+                left_column[0],
+                VerticalPosition::Center,
+                Some(4 - (game.activity_ticks / 2)),
+            )
+            .centered()
+            .render(left_column[0], buf);
+        }
     } else {
         let [top_left, top_right, bottom_left, bottom_right] = two_by_two_layout(area);
         // Rendering top and bottom arrows
@@ -941,18 +955,32 @@ fn render_mini_game_post(game: &Game, areas: [Rect; 3], buf: &mut Buffer) {
 }
 
 fn render_medicine(game: &Game, area: Rect, buf: &mut Buffer) {
-    let frame = if game.activity_ticks > 5 { 0 } else { 1 };
-    self::render_image_as_paragraph(
-        format!(
-            "assets/ratagotchi/medicine{}.gif",
-            game.ratagotchi.fitness_suffix()
-        ),
-        area,
-        VerticalPosition::Center,
-        Some(frame),
-    )
-    .centered()
-    .render(area, buf);
+    if game.is_refusing {
+        self::render_image_as_paragraph(
+            format!(
+                "assets/ratagotchi/refusal{}.gif",
+                game.ratagotchi.fitness_suffix()
+            ),
+            area,
+            VerticalPosition::Center,
+            Some(game.tick_progress % 2),
+        )
+        .centered()
+        .render(area, buf);
+    } else {
+        let frame = if game.activity_ticks > 5 { 0 } else { 1 };
+        self::render_image_as_paragraph(
+            format!(
+                "assets/ratagotchi/medicine{}.gif",
+                game.ratagotchi.fitness_suffix()
+            ),
+            area,
+            VerticalPosition::Center,
+            Some(frame),
+        )
+        .centered()
+        .render(area, buf);
+    }
 }
 
 fn render_bath(game: &Game, area: Rect, buf: &mut Buffer) {

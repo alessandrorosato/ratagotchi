@@ -21,9 +21,12 @@ use crate::{
         RATAGOTCHI_ENERGY_COST_PLAY, RATAGOTCHI_ENERGY_DROWSY_THRESHOLD,
         RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD, RATAGOTCHI_FITNESS_CHANGE_L,
         RATAGOTCHI_FITNESS_CHANGE_S, RATAGOTCHI_FITNESS_DECAY_INTERVAL,
-        RATAGOTCHI_RECOVERY_FACTOR_ENERGY, RATAGOTCHI_SLEEP_DECAY_MULTIPLIER,
-        RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD,
-        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_RECOVERY_FACTOR_ENERGY, RATAGOTCHI_REFUSAL_DISCIPLINE_COST,
+        RATAGOTCHI_REFUSAL_MAX_CHEESE, RATAGOTCHI_REFUSAL_MAX_MEDICINE,
+        RATAGOTCHI_REFUSAL_MAX_RATFOOD, RATAGOTCHI_REFUSAL_THRESHOLD,
+        RATAGOTCHI_SLEEP_DECAY_MULTIPLIER, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
+        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -47,6 +50,7 @@ pub struct Game {
     pub main_menu_index: MainMenuIndex,
     pub main_menu_popup: bool,
     pub is_navigation_hidden: bool,
+    pub is_refusing: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -413,12 +417,20 @@ impl Game {
             self.highlighted_tab = GameView::default();
             self.is_action_over = false;
             self.is_navigation_hidden = false;
+            self.is_refusing = false;
         }
     }
 
     fn do_action(&mut self) {
         let bonus = self.bonus_coefficient();
         if self.active_view == GameView::Feed {
+            let max_refusal_chance = match self.choice {
+                Choice::Top => RATAGOTCHI_REFUSAL_MAX_CHEESE,
+                Choice::Bottom => RATAGOTCHI_REFUSAL_MAX_RATFOOD,
+            };
+            if self.refusal_roll(max_refusal_chance, self.ratagotchi.hunger) {
+                return;
+            }
             let (hunger_restored, happiness_restored, fitness_variation) = match self.choice {
                 Choice::Top => {
                     let fitness_variation =
@@ -466,6 +478,9 @@ impl Game {
             && self.active_view != GameView::Medicine
         {
             self.active_view = GameView::Medicine;
+            if self.refusal_roll(RATAGOTCHI_REFUSAL_MAX_MEDICINE, self.ratagotchi.health) {
+                return;
+            }
             self.reset_activity_ticks();
             self.ratagotchi.change_stats(RatagotchiStats::Health, 60.0);
             self.ratagotchi.is_asleep = false;
@@ -595,6 +610,20 @@ impl Game {
 
     fn reset_activity_ticks(&mut self) {
         self.activity_ticks = RATAGOTCHI_ACTIVITY_DURATION;
+    }
+
+    fn refusal_roll(&mut self, max_refusal_chance: f32, need: f32) -> bool {
+        if rand::random_range(0.0..1.0) >= self.ratagotchi.refusal_chance(max_refusal_chance, need)
+        {
+            return false;
+        }
+        self.is_refusing = true;
+        self.reset_activity_ticks();
+        self.ratagotchi.change_stats(
+            RatagotchiStats::Discipline,
+            -RATAGOTCHI_REFUSAL_DISCIPLINE_COST,
+        );
+        true
     }
 }
 
@@ -791,6 +820,16 @@ impl Ratagotchi {
                     .clamp(RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_MAX_VALUE);
             }
         };
+    }
+
+    fn refusal_chance(&self, max_refusal_chance: f32, need: f32) -> f32 {
+        if self.discipline >= RATAGOTCHI_REFUSAL_THRESHOLD {
+            0.0
+        } else {
+            let weight =
+                (RATAGOTCHI_REFUSAL_THRESHOLD - self.discipline) / RATAGOTCHI_REFUSAL_THRESHOLD;
+            max_refusal_chance * weight * weight * (need / 100.0)
+        }
     }
 
     fn update_sleep(&mut self, ticks: f32, can_fall_asleep: bool) {
