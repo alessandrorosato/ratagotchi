@@ -14,19 +14,19 @@ use serde::{Deserialize, Serialize};
 use crate::{
     config::{
         GAME_AUTOSAVE_FREQUENCY, GAME_CATCHUP_CHUNK_TICKS, RATAGOTCHI_ACTIVITY_DURATION,
-        RATAGOTCHI_BIRTH_WEIGHT_RANGE, RATAGOTCHI_DECAY_FACTOR_DISCIPLINE,
-        RATAGOTCHI_DECAY_FACTOR_ENERGY, RATAGOTCHI_DECAY_FACTOR_HAPPINESS,
-        RATAGOTCHI_DECAY_FACTOR_HEALTH, RATAGOTCHI_DECAY_FACTOR_HUNGER,
-        RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_DECAY_NEGLECT_CAP, RATAGOTCHI_ENERGY_COST_OVEREAT,
-        RATAGOTCHI_ENERGY_COST_PLAY, RATAGOTCHI_ENERGY_DROWSY_THRESHOLD,
-        RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD, RATAGOTCHI_FITNESS_CHANGE_L,
-        RATAGOTCHI_FITNESS_CHANGE_S, RATAGOTCHI_FITNESS_DECAY_INTERVAL,
-        RATAGOTCHI_RECOVERY_FACTOR_ENERGY, RATAGOTCHI_REFUSAL_DISCIPLINE_COST,
-        RATAGOTCHI_REFUSAL_MAX_CHEESE, RATAGOTCHI_REFUSAL_MAX_MEDICINE,
-        RATAGOTCHI_REFUSAL_MAX_RATFOOD, RATAGOTCHI_REFUSAL_THRESHOLD,
-        RATAGOTCHI_SLEEP_DECAY_MULTIPLIER, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
-        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
-        STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_BIRTH_WEIGHT_RANGE, RATAGOTCHI_BONUS_HEALTH_THRESHOLD, RATAGOTCHI_BONUS_MIN,
+        RATAGOTCHI_DECAY_FACTOR_DISCIPLINE, RATAGOTCHI_DECAY_FACTOR_ENERGY,
+        RATAGOTCHI_DECAY_FACTOR_HAPPINESS, RATAGOTCHI_DECAY_FACTOR_HEALTH,
+        RATAGOTCHI_DECAY_FACTOR_HUNGER, RATAGOTCHI_DECAY_FACTOR_POOP, RATAGOTCHI_DECAY_NEGLECT_CAP,
+        RATAGOTCHI_ENERGY_COST_OVEREAT, RATAGOTCHI_ENERGY_COST_PLAY,
+        RATAGOTCHI_ENERGY_DROWSY_THRESHOLD, RATAGOTCHI_ENERGY_EXHAUSTED_THRESHOLD,
+        RATAGOTCHI_FITNESS_CHANGE_L, RATAGOTCHI_FITNESS_CHANGE_S,
+        RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
+        RATAGOTCHI_REFUSAL_DISCIPLINE_COST, RATAGOTCHI_REFUSAL_MAX_CHEESE,
+        RATAGOTCHI_REFUSAL_MAX_MEDICINE, RATAGOTCHI_REFUSAL_MAX_RATFOOD,
+        RATAGOTCHI_REFUSAL_THRESHOLD, RATAGOTCHI_SLEEP_DECAY_MULTIPLIER, RATAGOTCHI_STAT_MAX_VALUE,
+        RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY,
+        STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -298,8 +298,10 @@ impl Game {
         if self.is_mini_game_running
             && let Some(result) = self.mini_game.run()
         {
-            self.ratagotchi
-                .change_stats(RatagotchiStats::Happiness, result);
+            self.ratagotchi.change_stats(
+                RatagotchiStats::Happiness,
+                result * self.ratagotchi.bonus_coefficient(),
+            );
             self.ratagotchi
                 .change_stats(RatagotchiStats::Energy, -RATAGOTCHI_ENERGY_COST_PLAY);
             self.is_mini_game_running = false;
@@ -334,7 +336,7 @@ impl Game {
         );
         self.ratagotchi.change_stats(
             RatagotchiStats::Health,
-            -RATAGOTCHI_DECAY_FACTOR_HEALTH * ticks,
+            -RATAGOTCHI_DECAY_FACTOR_HEALTH * (1.0 + self.ratagotchi.poop / 100.0) * ticks,
         );
         self.ratagotchi.change_stats(
             RatagotchiStats::Happiness,
@@ -367,18 +369,6 @@ impl Game {
     pub fn convert_secs_to_game_days(real_secs: f32) -> f32 {
         let days_per_second = 90.0 / SECONDS_PER_DAY;
         real_secs * days_per_second
-    }
-
-    // TODO: This should change based on the ratagotchi health, fitness (to be implemented) and illness (to be implemented)
-    // The lower stats, the less efficient actions are (i.e. you need to stay on top of it if it's in a bad shape)
-    pub fn bonus_coefficient(&mut self) -> f32 {
-        1.0
-    }
-
-    // TODO: similarly to the above, "malus_coefficient" for decays and other similar effects
-    // The lower stats, the faster stats will decay (i.e. keeping the rat sick will precipitate the situation)
-    pub fn malus_coefficient(&mut self) -> f32 {
-        1.0
     }
 
     fn next_state(&mut self, state: GameState) {
@@ -422,7 +412,7 @@ impl Game {
     }
 
     fn do_action(&mut self) {
-        let bonus = self.bonus_coefficient();
+        let bonus = self.ratagotchi.bonus_coefficient();
         if self.active_view == GameView::Feed {
             let max_refusal_chance = match self.choice {
                 Choice::Top => RATAGOTCHI_REFUSAL_MAX_CHEESE,
@@ -861,5 +851,10 @@ impl Ratagotchi {
                 self.is_asleep = true;
             }
         }
+    }
+
+    fn bonus_coefficient(&self) -> f32 {
+        let health_factor = (self.health / RATAGOTCHI_BONUS_HEALTH_THRESHOLD).min(1.0);
+        RATAGOTCHI_BONUS_MIN + (1.0 - RATAGOTCHI_BONUS_MIN) * health_factor
     }
 }
