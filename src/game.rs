@@ -24,9 +24,9 @@ use crate::{
         RATAGOTCHI_FITNESS_DECAY_INTERVAL, RATAGOTCHI_RECOVERY_FACTOR_ENERGY,
         RATAGOTCHI_REFUSAL_DISCIPLINE_COST, RATAGOTCHI_REFUSAL_MAX_CHEESE,
         RATAGOTCHI_REFUSAL_MAX_MEDICINE, RATAGOTCHI_REFUSAL_MAX_RATFOOD,
-        RATAGOTCHI_REFUSAL_THRESHOLD, RATAGOTCHI_SLEEP_DECAY_MULTIPLIER, RATAGOTCHI_STAT_MAX_VALUE,
-        RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY,
-        STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_REFUSAL_THRESHOLD, RATAGOTCHI_RETIREMENT_AGE, RATAGOTCHI_SLEEP_DECAY_MULTIPLIER,
+        RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD,
+        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -53,13 +53,13 @@ pub struct Game {
     pub is_refusing: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Ratagotchi {
     pub hunger: f32,
     pub health: f32,
     pub happiness: f32,
     pub discipline: f32,
-    birth_weight: f32,
+    pub birth_weight: f32,
     pub weight: f32,
     fitness: Fitness,
     pub poop: f32,
@@ -72,6 +72,7 @@ pub struct Ratagotchi {
     pub is_asleep: bool,
     #[serde(default)]
     pub is_dark: bool,
+    pub is_over: Option<GameOver>,
 }
 
 fn default_energy() -> f32 {
@@ -109,7 +110,7 @@ pub enum ChoiceDirection {
     Down,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Fitness {
     value: f32,
     last_update: DateTime<Utc>,
@@ -125,6 +126,12 @@ struct FitnessChange(f32);
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct MainMenuIndex(pub usize);
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum GameOver {
+    Retired,
+    Dead,
+}
 
 impl Game {
     pub fn run(
@@ -159,10 +166,12 @@ impl Game {
                         Ok(trigger) => match trigger {
                             Trigger::Input(key_event) => self.handle_key_event(key_event),
                             Trigger::Tick => {
-                                self.update_stats();
-                                self.ratagotchi.fitness_decay();
-                                self.tick_increase();
-                                self.back_to_main();
+                                if self.ratagotchi.is_over.is_none() {
+                                    self.update_stats();
+                                    self.ratagotchi.fitness_decay();
+                                    self.tick_increase();
+                                    self.back_to_main();
+                                }
                             }
                         },
                         Err(e) => {
@@ -360,6 +369,10 @@ impl Game {
         self.tick_decay(1.0);
         let real_secs_delta = (Utc::now() - self.ratagotchi.birth).as_seconds_f32();
         self.ratagotchi.age = Self::convert_secs_to_game_days(real_secs_delta);
+        if let Some(over) = self.is_over() {
+            self.ratagotchi.is_over = Some(over);
+            self.save_hall_of_fame();
+        }
         self.ratagotchi.update_weight();
     }
 
@@ -369,6 +382,10 @@ impl Game {
     pub fn convert_secs_to_game_days(real_secs: f32) -> f32 {
         let days_per_second = 90.0 / SECONDS_PER_DAY;
         real_secs * days_per_second
+    }
+
+    pub fn convert_game_days_to_secs(game_days: f32) -> f32 {
+        game_days * SECONDS_PER_DAY / 90.0
     }
 
     fn next_state(&mut self, state: GameState) {
@@ -547,7 +564,12 @@ impl Game {
     }
 
     fn catchup(&mut self) {
-        let time_delta = (Utc::now() - self.ratagotchi.last_update).as_seconds_f32();
+        let retirement = self.ratagotchi.birth
+            + chrono::Duration::seconds(
+                Self::convert_game_days_to_secs(RATAGOTCHI_RETIREMENT_AGE) as i64
+            );
+        let catchup_end = Utc::now().min(retirement);
+        let time_delta = (catchup_end - self.ratagotchi.last_update).as_seconds_f32();
         let ticks_delta = time_delta * 2.0;
         let mut remaining_ticks = ticks_delta;
         while remaining_ticks > 0.0 {
@@ -615,6 +637,66 @@ impl Game {
         );
         true
     }
+
+    fn is_over(&self) -> Option<GameOver> {
+        if self.ratagotchi.age >= RATAGOTCHI_RETIREMENT_AGE {
+            Some(GameOver::Retired)
+        } else {
+            None
+        }
+    }
+
+    fn read_hall_of_fame(&self) -> Option<Vec<Ratagotchi>> {
+        match get_storage_folder() {
+            Ok(f) => {
+                let full_path = f.join("hall_of_fame.json");
+                if let Ok(json_data) = std::fs::read(full_path) {
+                    match serde_json::from_slice::<Vec<Ratagotchi>>(&json_data) {
+                        Ok(r) => Some(r),
+                        Err(e) => {
+                            error!("Error while reading save file: {}.", e);
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+            Err(e) => {
+                error!("Error while getting storage folder: {}.", e);
+                None
+            }
+        }
+    }
+
+    fn save_hall_of_fame(&self) {
+        let mut hall_of_fame_data = self.read_hall_of_fame().unwrap_or_default();
+
+        // Check for duplicates
+        let duplicate = hall_of_fame_data
+            .iter()
+            .any(|item| item.birth == self.ratagotchi.birth);
+
+        if !duplicate {
+            match get_storage_folder() {
+                Ok(f) => {
+                    let full_path = f.join("hall_of_fame.json");
+                    hall_of_fame_data.push(self.ratagotchi.clone());
+                    match serde_json::to_vec(&hall_of_fame_data) {
+                        Ok(data) => {
+                            let _ = std::fs::write(full_path, data).inspect_err(|e| {
+                                error!("Error while writing hall of fame file: {}.", e);
+                            });
+                        }
+                        Err(e) => error!("Error while getting storage folder: {}.", e),
+                    };
+                }
+                Err(e) => {
+                    error!("Error while getting storage folder: {}.", e);
+                }
+            }
+        }
+    }
 }
 
 pub enum Trigger {
@@ -670,6 +752,7 @@ impl Default for Ratagotchi {
             energy: RATAGOTCHI_STAT_MAX_VALUE,
             is_asleep: false,
             is_dark: false,
+            is_over: None,
         }
     }
 }

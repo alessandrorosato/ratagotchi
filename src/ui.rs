@@ -1,6 +1,6 @@
 use std::{fmt, fs::File, io::BufReader, path::Path};
 
-use chrono::Utc;
+use chrono::{SubsecRound, Utc};
 use image::{AnimationDecoder, ImageReader, RgbaImage, codecs::gif::GifDecoder};
 use ratatui::{
     buffer::Buffer,
@@ -17,7 +17,7 @@ use crate::{
         RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BONUS_HEALTH_THRESHOLD,
         RATAGOTCHI_ENERGY_DROWSY_THRESHOLD,
     },
-    game::{Choice, Game, GameState},
+    game::{Choice, Game, GameOver, GameState},
     minigame::MiniGamePick,
     utils::human_friendly_time_delta,
     widgets::ProgressBar,
@@ -346,7 +346,11 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
 
     let block = Block::bordered()
         .title(title.centered())
-        .title_bottom(get_instructions())
+        .title_bottom(if game.ratagotchi.is_over.is_none() {
+            get_instructions()
+        } else {
+            get_hof_instructions()
+        })
         .border_set(border::THICK);
 
     let [top, main, bottom] = block.inner(area).layout(&layout);
@@ -354,20 +358,27 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     // Render outer border
     block.render(area, buf);
 
-    // navigation(game, (top, bottom), buf);
-    navigation_row(game, top, buf, true);
-    navigation_row(game, bottom, buf, false);
+    if let Some(over) = &game.ratagotchi.is_over {
+        match over {
+            GameOver::Retired => render_retired(game, main, buf),
+            GameOver::Dead => render_dead(game, main, buf),
+        }
+    } else {
+        // navigation(game, (top, bottom), buf);
+        navigation_row(game, top, buf, true);
+        navigation_row(game, bottom, buf, false);
 
-    match game.active_view {
-        GameView::Main => render_main(game, main, buf),
-        GameView::Feed => render_feed(game, main, buf),
-        GameView::Lights => render_main(game, main, buf),
-        GameView::Play => render_play(game, (main, bottom), buf),
-        GameView::Medicine => render_medicine(game, main, buf),
-        GameView::Bath => render_bath(game, main, buf),
-        GameView::Health => render_health(game, main, buf),
-        GameView::Scold => render_scold(game, main, buf),
-        GameView::Attention => render_attention(game, main, buf),
+        match game.active_view {
+            GameView::Main => render_main(game, main, buf),
+            GameView::Feed => render_feed(game, main, buf),
+            GameView::Lights => render_main(game, main, buf),
+            GameView::Play => render_play(game, (main, bottom), buf),
+            GameView::Medicine => render_medicine(game, main, buf),
+            GameView::Bath => render_bath(game, main, buf),
+            GameView::Health => render_health(game, main, buf),
+            GameView::Scold => render_scold(game, main, buf),
+            GameView::Attention => render_attention(game, main, buf),
+        }
     }
 }
 
@@ -526,6 +537,10 @@ pub fn img_to_lines<'a>(img: &RgbaImage) -> Vec<Line<'a>> {
 fn get_instructions() -> Line<'static> {
     Line::from(" <Left/Right> main navigation, <Up/Down> inner navigation, <Enter> select, <Esc> return to main view, <q> quit ".to_string())
     .alignment(Alignment::Center)
+}
+
+fn get_hof_instructions() -> Line<'static> {
+    Line::from(" <q> quit ".to_string()).alignment(Alignment::Center)
 }
 
 fn get_menu_instructions() -> Line<'static> {
@@ -1155,4 +1170,76 @@ fn render_attention(game: &Game, area: Rect, buf: &mut Buffer) {
                 .render(inner_layout[1], buf);
         }
     }
+}
+
+fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
+    let columns_layout =
+        Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).spacing(1);
+    let block = Block::new();
+    let [left_column, right_column] = block.inner(area).layout(&columns_layout);
+
+    let left_column_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(15),
+        Constraint::Length(4),
+        Constraint::Fill(2),
+    ]);
+
+    let [_, portrait, game_over_text, _] =
+        Block::new().inner(left_column).layout(&left_column_layout);
+
+    self::render_image_as_paragraph(
+        "assets/ratagotchi/head.png".to_string(),
+        portrait,
+        VerticalPosition::Center,
+        None,
+    )
+    .centered()
+    .render(portrait, buf);
+
+    BigText::builder()
+        .pixel_size(PixelSize::Quadrant)
+        .centered()
+        .lines(["Retired".to_string().into()])
+        .build()
+        .render(game_over_text, buf);
+
+    let right_column_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(32),
+        Constraint::Fill(2),
+    ]);
+
+    let [_, stats, _] = Block::new()
+        .inner(right_column)
+        .layout(&right_column_layout);
+
+    let (dob_date, dob_time) = (
+        game.ratagotchi.birth.date_naive(),
+        game.ratagotchi.birth.time().trunc_subsecs(0),
+    );
+
+    BigText::builder()
+        .pixel_size(PixelSize::Sextant)
+        .centered()
+        .lines([
+            Line::from("DOB"),
+            format!("{}", dob_date).into(),
+            format!("{}", dob_time).into(),
+            Line::from(""),
+            Line::from("Weight at birth"),
+            format!("{:.1} g", game.ratagotchi.birth_weight).into(),
+            Line::from(""),
+            Line::from("Retirement weight"),
+            game.ratagotchi.print_weight().into(),
+            game.ratagotchi.print_fitness().into(),
+        ])
+        .build()
+        .render(stats, buf);
+}
+fn render_dead(game: &Game, area: Rect, buf: &mut Buffer) {
+    panic!(
+        "{}",
+        format!("Game over (death): {:?}", game.ratagotchi.is_over)
+    )
 }
