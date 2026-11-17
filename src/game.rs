@@ -171,6 +171,9 @@ impl Game {
                                     self.ratagotchi.fitness_decay();
                                     self.tick_increase();
                                     self.back_to_main();
+                                } else {
+                                    self.set_view(GameView::GameOver);
+                                    self.is_navigation_hidden = true;
                                 }
                             }
                         },
@@ -233,8 +236,12 @@ impl Game {
                     }
                 }
                 KeyCode::Esc => {
-                    self.set_view(GameView::Main);
-                    self.highlighted_tab = GameView::Main;
+                    if self.is_over().is_some() {
+                        self.state = GameState::Menu;
+                    } else {
+                        self.set_view(GameView::Main);
+                        self.highlighted_tab = GameView::Main;
+                    }
                 }
                 KeyCode::Up => self.change_choice(ChoiceDirection::Up),
                 KeyCode::Down => self.change_choice(ChoiceDirection::Down),
@@ -268,6 +275,7 @@ impl Game {
             GameView::Health => GameView::Scold,
             GameView::Scold => GameView::Attention,
             GameView::Attention => GameView::Feed,
+            _ => GameView::Main,
         };
     }
 
@@ -282,6 +290,7 @@ impl Game {
             GameView::Health => GameView::Bath,
             GameView::Scold => GameView::Health,
             GameView::Attention => GameView::Scold,
+            _ => GameView::Main,
         };
     }
 
@@ -371,6 +380,7 @@ impl Game {
         self.ratagotchi.age = Self::convert_secs_to_game_days(real_secs_delta);
         if let Some(over) = self.is_over() {
             self.ratagotchi.is_over = Some(over);
+            self.set_view(GameView::GameOver);
             self.save_hall_of_fame();
         }
         self.ratagotchi.update_weight();

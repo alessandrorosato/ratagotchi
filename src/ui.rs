@@ -35,6 +35,7 @@ pub enum GameView {
     Health,
     Scold,
     Attention,
+    GameOver,
 }
 
 impl GameView {
@@ -94,7 +95,7 @@ impl fmt::Display for GameView {
 impl GameView {
     fn index(&self) -> usize {
         match self {
-            GameView::Main => 0,
+            GameView::Main | GameView::GameOver => 0,
             GameView::Feed => 1,
             GameView::Lights => 2,
             GameView::Play => 3,
@@ -358,26 +359,26 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
     // Render outer border
     block.render(area, buf);
 
-    if let Some(over) = &game.ratagotchi.is_over {
-        match over {
-            GameOver::Retired => render_retired(game, main, buf),
-            GameOver::Dead => render_dead(game, main, buf),
-        }
-    } else {
-        // navigation(game, (top, bottom), buf);
-        navigation_row(game, top, buf, true);
-        navigation_row(game, bottom, buf, false);
+    navigation_row(game, top, buf, true);
+    navigation_row(game, bottom, buf, false);
 
-        match game.active_view {
-            GameView::Main => render_main(game, main, buf),
-            GameView::Feed => render_feed(game, main, buf),
-            GameView::Lights => render_main(game, main, buf),
-            GameView::Play => render_play(game, (main, bottom), buf),
-            GameView::Medicine => render_medicine(game, main, buf),
-            GameView::Bath => render_bath(game, main, buf),
-            GameView::Health => render_health(game, main, buf),
-            GameView::Scold => render_scold(game, main, buf),
-            GameView::Attention => render_attention(game, main, buf),
+    match game.active_view {
+        GameView::Main => render_main(game, main, buf),
+        GameView::Feed => render_feed(game, main, buf),
+        GameView::Lights => render_main(game, main, buf),
+        GameView::Play => render_play(game, (main, bottom), buf),
+        GameView::Medicine => render_medicine(game, main, buf),
+        GameView::Bath => render_bath(game, main, buf),
+        GameView::Health => render_health(game, main, buf),
+        GameView::Scold => render_scold(game, main, buf),
+        GameView::Attention => render_attention(game, main, buf),
+        GameView::GameOver => {
+            if let Some(over) = &game.ratagotchi.is_over {
+                match over {
+                    GameOver::Retired => render_retired(game, main, buf),
+                    GameOver::Dead => render_dead(game, main, buf),
+                }
+            }
         }
     }
 }
@@ -540,7 +541,7 @@ fn get_instructions() -> Line<'static> {
 }
 
 fn get_hof_instructions() -> Line<'static> {
-    Line::from(" <q> quit ".to_string()).alignment(Alignment::Center)
+    Line::from(" <Esc> return to main menu, <q> quit ".to_string()).alignment(Alignment::Center)
 }
 
 fn get_menu_instructions() -> Line<'static> {
@@ -1237,6 +1238,7 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
         .build()
         .render(stats, buf);
 }
+
 fn render_dead(game: &Game, area: Rect, buf: &mut Buffer) {
     panic!(
         "{}",
