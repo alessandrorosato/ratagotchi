@@ -1183,10 +1183,11 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
         Constraint::Fill(1),
         Constraint::Length(15),
         Constraint::Length(4),
+        Constraint::Length(4),
         Constraint::Fill(2),
     ]);
 
-    let [_, portrait, game_over_text, _] =
+    let [_, portrait, game_over_text, age_text, _] =
         Block::new().inner(left_column).layout(&left_column_layout);
 
     self::render_image_as_paragraph(
@@ -1204,6 +1205,13 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
         .lines(["Retired".to_string().into()])
         .build()
         .render(game_over_text, buf);
+
+    BigText::builder()
+        .pixel_size(PixelSize::Sextant)
+        .centered()
+        .lines([game.ratagotchi.print_age().into()])
+        .build()
+        .render(age_text, buf);
 
     let right_column_layout = Layout::vertical([
         Constraint::Fill(1),
