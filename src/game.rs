@@ -51,6 +51,8 @@ pub struct Game {
     pub main_menu_popup: bool,
     pub is_navigation_hidden: bool,
     pub is_refusing: bool,
+    pub hall_of_fame: Option<Vec<Ratagotchi>>,
+    pub hall_of_fame_index: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -95,6 +97,7 @@ pub enum GameState {
     CatchingUp,
     Running,
     Exiting,
+    HallOfFame,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -193,6 +196,20 @@ impl Game {
                     thread::sleep(Duration::from_millis(1000));
                     self.exit();
                 }
+                GameState::HallOfFame => {
+                    match rx.recv() {
+                        Ok(trigger) => {
+                            if let Trigger::Input(key_event) = trigger {
+                                self.handle_key_event(key_event)
+                            }
+                        }
+                        Err(e) => {
+                            error!("Receiver error: {}.", e);
+                            break;
+                        }
+                    }
+                    terminal.draw(|frame| self.draw(frame))?;
+                }
             }
         }
         info!("Stopping terminal interface.");
@@ -211,6 +228,29 @@ impl Game {
                 KeyCode::Enter => self.main_menu_action(),
                 KeyCode::Char('q') => self.exit = true,
                 KeyCode::Esc => self.main_menu_popup = false,
+                _ => {}
+            }
+        } else if self.state == GameState::HallOfFame {
+            match key_event.code {
+                KeyCode::Up => {
+                    if self.hall_of_fame_index > 0 {
+                        self.hall_of_fame_index -= 1;
+                        self.ratagotchi = self.hall_of_fame.clone().unwrap_or_default()
+                            [self.hall_of_fame_index]
+                            .clone();
+                    }
+                }
+                KeyCode::Down => {
+                    let max_index = self.hall_of_fame.clone().unwrap_or_default().len() - 1;
+                    self.hall_of_fame_index = (self.hall_of_fame_index + 1).min(max_index);
+                    self.ratagotchi = self.hall_of_fame.clone().unwrap_or_default()
+                        [self.hall_of_fame_index]
+                        .clone();
+                }
+                KeyCode::Esc => {
+                    self.state = GameState::Menu;
+                }
+                KeyCode::Char('q') => self.exit = true,
                 _ => {}
             }
         } else {
@@ -598,7 +638,7 @@ impl Game {
     fn main_menu_index_increase(&mut self) {
         if !self.main_menu_popup {
             let current_index = self.main_menu_index.0;
-            let new_index = (current_index + 1).min(2);
+            let new_index = (current_index + 1).min(3);
             self.main_menu_index = MainMenuIndex(new_index);
         }
     }
@@ -625,7 +665,14 @@ impl Game {
                     self.main_menu_popup = true
                 }
             }
-            2 => self.exit = true,
+            2 => {
+                let hof_data = self.read_hall_of_fame();
+                if hof_data.is_some() {
+                    self.hall_of_fame = hof_data;
+                    self.next_state(GameState::HallOfFame)
+                }
+            }
+            3 => self.exit = true,
             _ => {}
         }
     }

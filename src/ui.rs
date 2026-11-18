@@ -8,7 +8,7 @@ use ratatui::{
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
-    widgets::{Block, Clear, Padding, Paragraph, Widget},
+    widgets::{Block, Clear, List, ListState, Padding, Paragraph, StatefulWidget, Widget},
 };
 use tui_big_text::{BigText, PixelSize};
 
@@ -192,6 +192,7 @@ impl Widget for &Game {
             GameState::CatchingUp => render_catching_up(self, area, buf),
             GameState::Running => render_view(self, area, buf),
             GameState::Exiting => render_exiting(area, buf),
+            GameState::HallOfFame => render_hall_of_fame(self, area, buf),
         }
     }
 }
@@ -215,6 +216,7 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
         Constraint::Length(3),
         Constraint::Length(3),
         Constraint::Length(3),
+        Constraint::Length(3),
         Constraint::Fill(1),
     ])
     .spacing(1)
@@ -226,7 +228,7 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
         .border_set(border::THICK)
         .render(horizontal_layout[1], buf);
 
-    let labels = ["Load Ratagotchi", "New Ratagotchi", "Quit"];
+    let labels = ["Load Ratagotchi", "New Ratagotchi", "Hall of Fame", "Quit"];
     let widest_label = labels.iter().map(|l| l.len()).max().unwrap_or(10) + 6;
 
     for (i, title) in labels.iter().enumerate() {
@@ -1252,4 +1254,57 @@ fn render_dead(game: &Game, area: Rect, buf: &mut Buffer) {
         "{}",
         format!("Game over (death): {:?}", game.ratagotchi.is_over)
     )
+}
+
+fn render_hall_of_fame(game: &Game, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Ratagotchi ".bold());
+    let layout = Layout::vertical([
+        Constraint::Length(5),
+        Constraint::Fill(1),
+        Constraint::Length(5),
+    ])
+    .spacing(1);
+
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(get_hof_instructions())
+        .border_set(border::THICK);
+
+    let [_, main, _] = block.inner(area).layout(&layout);
+
+    // Render outer border
+    block.render(area, buf);
+
+    let columns_layout =
+        Layout::horizontal([Constraint::Length(13), Constraint::Fill(1)]).spacing(1);
+    let block = Block::bordered().border_set(border::THICK);
+    let [left_column, right_column] = block.inner(main).layout(&columns_layout);
+    let items: Vec<String> = game
+        .hall_of_fame
+        .clone()
+        .unwrap_or_default()
+        .iter()
+        .map(|u| u.birth.date_naive().to_string())
+        .collect();
+    Block::bordered()
+        .border_set(border::THICK)
+        .render(right_column, buf);
+    let tabs = List::new(items)
+        .block(block)
+        .highlight_style(Style::default().bold());
+
+    let mut list_state = ListState::default();
+    list_state.select(Some(game.hall_of_fame_index));
+    StatefulWidget::render(tabs, left_column, buf, &mut list_state);
+
+    let selected = &game.hall_of_fame.clone().unwrap()[game.hall_of_fame_index];
+
+    if let Some(game_over) = &selected.is_over {
+        match game_over {
+            GameOver::Retired => render_retired(game, right_column, buf),
+            GameOver::Dead => todo!(),
+        }
+    }
+
+    render_retired(game, right_column, buf);
 }
