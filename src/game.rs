@@ -185,12 +185,6 @@ impl Game {
                             break;
                         }
                     }
-                    if let Some(over) = self.is_over() {
-                        self.ratagotchi.is_over = Some(over);
-                        self.set_view(GameView::GameOver);
-                        self.save_hall_of_fame();
-                        self.save();
-                    }
                     if self.ratagotchi.is_over.is_none()
                         && self.tick_progress.is_multiple_of(GAME_AUTOSAVE_FREQUENCY)
                     {
@@ -430,6 +424,7 @@ impl Game {
             self.ratagotchi.is_over = Some(over);
             self.set_view(GameView::GameOver);
             self.save_hall_of_fame();
+            self.save();
         }
         self.ratagotchi.update_weight();
     }
