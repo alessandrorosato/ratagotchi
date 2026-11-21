@@ -185,7 +185,15 @@ impl Game {
                             break;
                         }
                     }
-                    if self.tick_progress.is_multiple_of(GAME_AUTOSAVE_FREQUENCY) {
+                    if let Some(over) = self.is_over() {
+                        self.ratagotchi.is_over = Some(over);
+                        self.set_view(GameView::GameOver);
+                        self.save_hall_of_fame();
+                        self.save();
+                    }
+                    if self.ratagotchi.is_over.is_none()
+                        && self.tick_progress.is_multiple_of(GAME_AUTOSAVE_FREQUENCY)
+                    {
                         self.save();
                     }
                     terminal.draw(|frame| self.draw(frame))?;
@@ -660,7 +668,10 @@ impl Game {
             1 => {
                 if self.main_menu_popup {
                     info!("Starting a new game, save file discarded!");
-                    self.next_state(GameState::Running)
+                    *self = Game {
+                        state: GameState::Running,
+                        ..Default::default()
+                    };
                 } else {
                     self.main_menu_popup = true
                 }
