@@ -53,6 +53,7 @@ pub struct Game {
     pub is_refusing: bool,
     pub hall_of_fame: Option<Vec<Ratagotchi>>,
     pub hall_of_fame_index: usize,
+    pub can_load: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -142,6 +143,7 @@ impl Game {
         terminal: &mut DefaultTerminal,
         rx: mpsc::Receiver<Trigger>,
     ) -> io::Result<()> {
+        self.refresh_can_load();
         while !self.exit {
             match self.state {
                 GameState::Menu => {
@@ -251,6 +253,7 @@ impl Game {
                 }
                 KeyCode::Esc => {
                     self.state = GameState::Menu;
+                    self.refresh_can_load();
                 }
                 KeyCode::Char('q') => self.exit = true,
                 _ => {}
@@ -280,6 +283,7 @@ impl Game {
                 KeyCode::Esc => {
                     if self.is_over().is_some() {
                         self.state = GameState::Menu;
+                        self.refresh_can_load();
                     } else {
                         self.set_view(GameView::Main);
                         self.highlighted_tab = GameView::Main;
@@ -599,20 +603,35 @@ impl Game {
         }
     }
 
-    fn load(&mut self) {
+    fn read_save(&self) -> Option<Ratagotchi> {
         match get_storage_folder() {
             Ok(f) => {
-                let full_path = f.join("savegame.json");
-                if let Ok(json_data) = std::fs::read(full_path) {
-                    match serde_json::from_slice::<Ratagotchi>(&json_data) {
-                        Ok(r) => self.ratagotchi = r,
-                        Err(e) => error!("Error while reading save file: {}.", e),
-                    };
+                let json_data = std::fs::read(f.join("savegame.json")).ok()?;
+                match serde_json::from_slice::<Ratagotchi>(&json_data) {
+                    Ok(r) => Some(r),
+                    Err(e) => {
+                        error!("Error while reading save file: {}.", e);
+                        None
+                    }
                 }
             }
             Err(e) => {
                 error!("Error while getting storage folder: {}.", e);
+                None
             }
+        }
+    }
+
+    fn load(&mut self) {
+        if let Some(r) = self.read_save() {
+            self.ratagotchi = r;
+        }
+    }
+
+    fn refresh_can_load(&mut self) {
+        self.can_load = self.read_save().is_some_and(|r| r.is_over.is_none());
+        if !self.can_load {
+            self.main_menu_index = MainMenuIndex(1);
         }
     }
 
@@ -659,9 +678,16 @@ impl Game {
 
     fn main_menu_action(&mut self) {
         match self.main_menu_index.0 {
-            0 => self.next_state(GameState::CatchingUp),
+            0 => {
+                if self.can_load {
+                    *self = Game {
+                        state: GameState::CatchingUp,
+                        ..Default::default()
+                    };
+                }
+            }
             1 => {
-                if self.main_menu_popup {
+                if self.main_menu_popup || !self.can_load {
                     info!("Starting a new game, save file discarded!");
                     *self = Game {
                         state: GameState::Running,

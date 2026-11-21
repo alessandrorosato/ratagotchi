@@ -232,6 +232,7 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
     let widest_label = labels.iter().map(|l| l.len()).max().unwrap_or(10) + 6;
 
     for (i, title) in labels.iter().enumerate() {
+        let is_disabled = i == 0 && !game.can_load;
         let is_selected = i == game.main_menu_index.0;
         let row_chunks = Layout::horizontal([
             Constraint::Fill(1),
@@ -257,6 +258,8 @@ fn render_main_menu(game: &Game, area: Rect, buf: &mut Buffer) {
             .centered()
             .style(if is_selected {
                 Style::default().fg(Color::Black)
+            } else if is_disabled {
+                Style::default().fg(Color::DarkGray)
             } else {
                 Style::default().fg(Color::White)
             })
@@ -1249,8 +1252,8 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
         .render(stats, buf);
 }
 
-fn render_dead(game: &Game, area: Rect, buf: &mut Buffer) {
-    panic!(
+fn render_dead(game: &Game, _area: Rect, _buf: &mut Buffer) {
+    todo!(
         "{}",
         format!("Game over (death): {:?}", game.ratagotchi.is_over)
     )
