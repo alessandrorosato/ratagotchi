@@ -17,7 +17,7 @@ use crate::{
         RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BONUS_HEALTH_THRESHOLD,
         RATAGOTCHI_ENERGY_DROWSY_THRESHOLD,
     },
-    game::{Choice, Game, GameOver, GameState},
+    game::{Choice, Game, GameOver, GameState, Ratagotchi},
     minigame::MiniGamePick,
     utils::human_friendly_time_delta,
     widgets::ProgressBar,
@@ -380,7 +380,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::GameOver => {
             if let Some(over) = &game.ratagotchi.is_over {
                 match over {
-                    GameOver::Retired => render_retired(game, main, buf),
+                    GameOver::Retired => render_retired(&game.ratagotchi, main, buf),
                     GameOver::Dead => render_dead(game, main, buf),
                 }
             }
@@ -1178,7 +1178,7 @@ fn render_attention(game: &Game, area: Rect, buf: &mut Buffer) {
     }
 }
 
-fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
+fn render_retired(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer) {
     let columns_layout =
         Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).spacing(1);
     let block = Block::new();
@@ -1214,7 +1214,7 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
     BigText::builder()
         .pixel_size(PixelSize::Sextant)
         .centered()
-        .lines([game.ratagotchi.print_age().into()])
+        .lines([ratagotchi.print_age().into()])
         .build()
         .render(age_text, buf);
 
@@ -1229,8 +1229,8 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
         .layout(&right_column_layout);
 
     let (dob_date, dob_time) = (
-        game.ratagotchi.birth.date_naive(),
-        game.ratagotchi.birth.time().trunc_subsecs(0),
+        ratagotchi.birth.date_naive(),
+        ratagotchi.birth.time().trunc_subsecs(0),
     );
 
     BigText::builder()
@@ -1242,11 +1242,11 @@ fn render_retired(game: &Game, area: Rect, buf: &mut Buffer) {
             format!("{}", dob_time).into(),
             Line::from(""),
             Line::from("Weight at birth"),
-            format!("{:.1} g", game.ratagotchi.birth_weight).into(),
+            format!("{:.1} g", ratagotchi.birth_weight).into(),
             Line::from(""),
             Line::from("Retirement weight"),
-            game.ratagotchi.print_weight().into(),
-            game.ratagotchi.print_fitness().into(),
+            ratagotchi.print_weight().into(),
+            ratagotchi.print_fitness().into(),
         ])
         .build()
         .render(stats, buf);
@@ -1282,10 +1282,10 @@ fn render_hall_of_fame(game: &Game, area: Rect, buf: &mut Buffer) {
         Layout::horizontal([Constraint::Length(13), Constraint::Fill(1)]).spacing(1);
     let block = Block::bordered().border_set(border::THICK);
     let [left_column, right_column] = block.inner(main).layout(&columns_layout);
-    let items: Vec<String> = game
-        .hall_of_fame
-        .clone()
-        .unwrap_or_default()
+    let Some(hall_of_fame) = &game.hall_of_fame else {
+        return;
+    };
+    let items: Vec<String> = hall_of_fame
         .iter()
         .map(|u| u.birth.date_naive().to_string())
         .collect();
@@ -1300,14 +1300,9 @@ fn render_hall_of_fame(game: &Game, area: Rect, buf: &mut Buffer) {
     list_state.select(Some(game.hall_of_fame_index));
     StatefulWidget::render(tabs, left_column, buf, &mut list_state);
 
-    let selected = &game.hall_of_fame.clone().unwrap()[game.hall_of_fame_index];
-
-    if let Some(game_over) = &selected.is_over {
-        match game_over {
-            GameOver::Retired => render_retired(game, right_column, buf),
-            GameOver::Dead => todo!(),
-        }
+    if let Some(selected) = hall_of_fame.get(game.hall_of_fame_index)
+        && matches!(selected.is_over, Some(GameOver::Retired))
+    {
+        render_retired(selected, right_column, buf);
     }
-
-    render_retired(game, right_column, buf);
 }

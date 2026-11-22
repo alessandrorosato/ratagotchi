@@ -236,20 +236,11 @@ impl Game {
             }
         } else if self.state == GameState::HallOfFame {
             match key_event.code {
-                KeyCode::Up => {
-                    if self.hall_of_fame_index > 0 {
-                        self.hall_of_fame_index -= 1;
-                        self.ratagotchi = self.hall_of_fame.clone().unwrap_or_default()
-                            [self.hall_of_fame_index]
-                            .clone();
-                    }
-                }
+                KeyCode::Up => self.hall_of_fame_index = self.hall_of_fame_index.saturating_sub(1),
                 KeyCode::Down => {
-                    let max_index = self.hall_of_fame.clone().unwrap_or_default().len() - 1;
-                    self.hall_of_fame_index = (self.hall_of_fame_index + 1).min(max_index);
-                    self.ratagotchi = self.hall_of_fame.clone().unwrap_or_default()
-                        [self.hall_of_fame_index]
-                        .clone();
+                    let len = self.hall_of_fame.as_ref().map_or(0, Vec::len);
+                    self.hall_of_fame_index =
+                        (self.hall_of_fame_index + 1).min(len.saturating_sub(1));
                 }
                 KeyCode::Esc => {
                     self.state = GameState::Menu;
@@ -701,6 +692,7 @@ impl Game {
                 let hof_data = self.read_hall_of_fame();
                 if hof_data.is_some() {
                     self.hall_of_fame = hof_data;
+                    self.hall_of_fame_index = 0;
                     self.next_state(GameState::HallOfFame)
                 }
             }
