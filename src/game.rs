@@ -414,14 +414,15 @@ impl Game {
     pub fn update_stats(&mut self) {
         self.tick_decay(1.0);
         let real_secs_delta = (Utc::now() - self.ratagotchi.birth).as_seconds_f32();
-        self.ratagotchi.age = Self::convert_secs_to_game_days(real_secs_delta);
+        self.ratagotchi.age =
+            Self::convert_secs_to_game_days(real_secs_delta).min(RATAGOTCHI_RETIREMENT_AGE);
+        self.ratagotchi.update_weight();
         if let Some(over) = self.is_over() {
             self.ratagotchi.is_over = Some(over);
             self.set_view(GameView::GameOver);
             self.save_hall_of_fame();
             self.save();
         }
-        self.ratagotchi.update_weight();
     }
 
     // Conversion (real to simulated):
