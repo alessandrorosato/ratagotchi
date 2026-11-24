@@ -173,7 +173,7 @@ impl Game {
                             Trigger::Tick => {
                                 if self.ratagotchi.is_over.is_none() {
                                     self.update_stats();
-                                    self.ratagotchi.fitness_decay();
+                                    self.ratagotchi.fitness_decay(Utc::now());
                                     self.tick_increase();
                                     self.back_to_main();
                                 } else {
@@ -641,7 +641,7 @@ impl Game {
             self.tick_decay(chunk);
             remaining_ticks -= chunk;
         }
-        self.ratagotchi.fitness_decay();
+        self.ratagotchi.fitness_decay(catchup_end);
         info!(
             "Caught up {} ({} ticks).",
             human_friendly_time_delta(time_delta as i64),
@@ -937,8 +937,8 @@ impl Ratagotchi {
         self.fitness.last_update = Utc::now();
     }
 
-    fn fitness_decay(&mut self) {
-        let time_delta = (Utc::now() - self.fitness.last_update).as_seconds_f32();
+    fn fitness_decay(&mut self, until: DateTime<Utc>) {
+        let time_delta = (until - self.fitness.last_update).as_seconds_f32();
         let num_fitness_decays = (time_delta / RATAGOTCHI_FITNESS_DECAY_INTERVAL).floor() as usize;
         if num_fitness_decays > 0 {
             self.update_fitness(
