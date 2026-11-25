@@ -920,13 +920,14 @@ impl Ratagotchi {
             self.birth_weight + months * (milestone_weights.0 - self.birth_weight)
         } else if months <= milestone_months.1 {
             let net_months = months - milestone_months.0;
-            milestone_weights.0 + net_months * (milestone_weights.1 - milestone_weights.0)
+            milestone_weights.0
+                + net_months * (milestone_weights.1 - milestone_weights.0)
+                    / (milestone_months.1 - milestone_months.0)
         } else {
             let net_months = months - milestone_months.1;
             let exp_growth_rate = 0.5;
             let remaining_growth = milestone_weights.2 - milestone_weights.1;
-            milestone_weights.2
-                - (remaining_growth * (-exp_growth_rate * net_months - milestone_months.1)).exp()
+            milestone_weights.2 - remaining_growth * (-exp_growth_rate * net_months).exp()
         };
 
         self.weight = weight * self.fitness.value;
