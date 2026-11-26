@@ -17,7 +17,7 @@ use crate::{
         RATAGOTCHI_ACTIVITY_DURATION, RATAGOTCHI_BONUS_HEALTH_THRESHOLD,
         RATAGOTCHI_ENERGY_DROWSY_THRESHOLD,
     },
-    game::{Choice, Game, GameOver, GameState, Ratagotchi},
+    game::{Choice, DeathCause, Game, GameOver, GameState, Ratagotchi},
     minigame::MiniGamePick,
     utils::human_friendly_time_delta,
     widgets::ProgressBar,
@@ -378,11 +378,8 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Scold => render_scold(game, main, buf),
         GameView::Attention => render_attention(game, main, buf),
         GameView::GameOver => {
-            if let Some(over) = &game.ratagotchi.is_over {
-                match over {
-                    GameOver::Retired => render_retired(&game.ratagotchi, main, buf),
-                    GameOver::Dead(cause) => render_dead(game, main, buf),
-                }
+            if let Some(game_over) = &game.ratagotchi.is_over {
+                render_game_over(&game.ratagotchi, area, buf, game_over);
             }
         }
     }
@@ -1178,7 +1175,7 @@ fn render_attention(game: &Game, area: Rect, buf: &mut Buffer) {
     }
 }
 
-fn render_retired(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer) {
+fn render_game_over(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer, game_over: &GameOver) {
     let columns_layout =
         Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).spacing(1);
     let block = Block::new();
@@ -1195,21 +1192,41 @@ fn render_retired(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer) {
     let [_, portrait, game_over_text, age_text, _] =
         Block::new().inner(left_column).layout(&left_column_layout);
 
-    self::render_image_as_paragraph(
-        "assets/ratagotchi/head.png".to_string(),
-        portrait,
-        VerticalPosition::Center,
-        None,
-    )
-    .centered()
-    .render(portrait, buf);
+    let (head_image, label_line, sublabel_line) = match game_over {
+        GameOver::Retired => (
+            "assets/ratagotchi/head.png".to_string(),
+            Line::from("Retired".to_string()),
+            None,
+        ),
+        GameOver::Dead(death_cause) => (
+            "assets/ratagotchi/head.png".to_string(),
+            Line::from("Death by".to_string()),
+            match death_cause {
+                DeathCause::Starvation => Some(Line::from("starvation".to_string())),
+                DeathCause::Sickness => Some(Line::from("disease".to_string())),
+            },
+        ),
+    };
+
+    self::render_image_as_paragraph(head_image, portrait, VerticalPosition::Center, None)
+        .centered()
+        .render(portrait, buf);
 
     BigText::builder()
         .pixel_size(PixelSize::Quadrant)
         .centered()
-        .lines(["Retired".to_string().into()])
+        .lines([label_line])
         .build()
         .render(game_over_text, buf);
+
+    if let Some(death_cause) = sublabel_line {
+        BigText::builder()
+            .pixel_size(PixelSize::Quadrant)
+            .centered()
+            .lines([death_cause])
+            .build()
+            .render(game_over_text, buf);
+    }
 
     BigText::builder()
         .pixel_size(PixelSize::Sextant)
@@ -1250,13 +1267,6 @@ fn render_retired(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer) {
         ])
         .build()
         .render(stats, buf);
-}
-
-fn render_dead(game: &Game, _area: Rect, _buf: &mut Buffer) {
-    todo!(
-        "{}",
-        format!("Game over (death): {:?}", game.ratagotchi.is_over)
-    )
 }
 
 fn render_hall_of_fame(game: &Game, area: Rect, buf: &mut Buffer) {
@@ -1301,8 +1311,8 @@ fn render_hall_of_fame(game: &Game, area: Rect, buf: &mut Buffer) {
     StatefulWidget::render(tabs, left_column, buf, &mut list_state);
 
     if let Some(selected) = hall_of_fame.get(game.hall_of_fame_index)
-        && matches!(selected.is_over, Some(GameOver::Retired))
+        && let Some(game_over) = &selected.is_over
     {
-        render_retired(selected, right_column, buf);
+        render_game_over(selected, right_column, buf, &game_over);
     }
 }
