@@ -381,7 +381,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
             if let Some(over) = &game.ratagotchi.is_over {
                 match over {
                     GameOver::Retired => render_retired(&game.ratagotchi, main, buf),
-                    GameOver::Dead => render_dead(game, main, buf),
+                    GameOver::Dead(cause) => render_dead(game, main, buf),
                 }
             }
         }

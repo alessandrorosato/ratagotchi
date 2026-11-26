@@ -135,7 +135,13 @@ pub struct MainMenuIndex(pub usize);
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum GameOver {
     Retired,
-    Dead,
+    Dead(DeathCause),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum DeathCause {
+    Starvation,
+    Sickness,
 }
 
 impl Game {
@@ -650,14 +656,14 @@ impl Game {
             self.tick_decay(chunk);
             remaining_ticks -= chunk;
             elapsed_ticks += chunk;
-            if let Some(GameOver::Dead) = self.is_over() {
+            if let Some(GameOver::Dead(cause)) = self.is_over() {
                 let death_time = self.ratagotchi.last_update
                     + chrono::Duration::milliseconds((elapsed_ticks * 500.0) as i64);
                 self.ratagotchi.age = Self::convert_secs_to_game_days(
                     (death_time - self.ratagotchi.birth).as_seconds_f32(),
                 );
                 self.ratagotchi.update_weight();
-                self.ratagotchi.is_over = Some(GameOver::Dead);
+                self.ratagotchi.is_over = Some(GameOver::Dead(cause));
                 self.save_hall_of_fame();
                 self.save();
                 return;
@@ -744,7 +750,12 @@ impl Game {
 
     fn is_over(&self) -> Option<GameOver> {
         if self.ratagotchi.health <= RATAGOTCHI_STAT_MIN_VALUE {
-            Some(GameOver::Dead)
+            let cause = if self.ratagotchi.hunger <= RATAGOTCHI_STAT_MIN_VALUE {
+                DeathCause::Starvation
+            } else {
+                DeathCause::Sickness
+            };
+            Some(GameOver::Dead(cause))
         } else if self.ratagotchi.age >= RATAGOTCHI_RETIREMENT_AGE {
             Some(GameOver::Retired)
         } else {
