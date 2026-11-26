@@ -28,6 +28,7 @@ pub const RATAGOTCHI_REFUSAL_MAX_CHEESE: f32 = 0.25;
 pub const RATAGOTCHI_BONUS_HEALTH_THRESHOLD: f32 = 60.0;
 pub const RATAGOTCHI_BONUS_MIN: f32 = 0.5;
 pub const RATAGOTCHI_RETIREMENT_AGE: f32 = 730.0;
+pub const RATAGOTCHI_STARVATION_HEALTH_DAMAGE: f32 = 0.002;
 
 // Game
 pub const GAME_AUTOSAVE_FREQUENCY: usize = 10; // Ticks between autosaves.

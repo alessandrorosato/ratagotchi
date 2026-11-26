@@ -25,8 +25,9 @@ use crate::{
         RATAGOTCHI_REFUSAL_DISCIPLINE_COST, RATAGOTCHI_REFUSAL_MAX_CHEESE,
         RATAGOTCHI_REFUSAL_MAX_MEDICINE, RATAGOTCHI_REFUSAL_MAX_RATFOOD,
         RATAGOTCHI_REFUSAL_THRESHOLD, RATAGOTCHI_RETIREMENT_AGE, RATAGOTCHI_SLEEP_DECAY_MULTIPLIER,
-        RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE, RATAGOTCHI_STAT_SATED_THRESHOLD,
-        SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE, STAT_INCREASE_FOOD_RATFOOD,
+        RATAGOTCHI_STARVATION_HEALTH_DAMAGE, RATAGOTCHI_STAT_MAX_VALUE, RATAGOTCHI_STAT_MIN_VALUE,
+        RATAGOTCHI_STAT_SATED_THRESHOLD, SECONDS_PER_DAY, STAT_INCREASE_FOOD_CHEESE,
+        STAT_INCREASE_FOOD_RATFOOD,
     },
     minigame::{MiniGame, MiniGamePick},
     ui::{GameView, RenderStats},
@@ -389,6 +390,13 @@ impl Game {
             RatagotchiStats::Hunger,
             -RATAGOTCHI_DECAY_FACTOR_HUNGER * decay_multiplier * ticks,
         );
+        // Starvation affects health
+        if self.ratagotchi.hunger <= RATAGOTCHI_STAT_MIN_VALUE {
+            self.ratagotchi.change_stats(
+                RatagotchiStats::Health,
+                -RATAGOTCHI_STARVATION_HEALTH_DAMAGE * ticks,
+            );
+        }
         self.ratagotchi.change_stats(
             RatagotchiStats::Health,
             -RATAGOTCHI_DECAY_FACTOR_HEALTH * (1.0 + self.ratagotchi.poop / 100.0) * ticks,
@@ -636,10 +644,24 @@ impl Game {
         let time_delta = (catchup_end - self.ratagotchi.last_update).as_seconds_f32();
         let ticks_delta = time_delta * 2.0;
         let mut remaining_ticks = ticks_delta;
+        let mut elapsed_ticks = 0.0;
         while remaining_ticks > 0.0 {
             let chunk = remaining_ticks.min(GAME_CATCHUP_CHUNK_TICKS);
             self.tick_decay(chunk);
             remaining_ticks -= chunk;
+            elapsed_ticks += chunk;
+            if let Some(GameOver::Dead) = self.is_over() {
+                let death_time = self.ratagotchi.last_update
+                    + chrono::Duration::milliseconds((elapsed_ticks * 500.0) as i64);
+                self.ratagotchi.age = Self::convert_secs_to_game_days(
+                    (death_time - self.ratagotchi.birth).as_seconds_f32(),
+                );
+                self.ratagotchi.update_weight();
+                self.ratagotchi.is_over = Some(GameOver::Dead);
+                self.save_hall_of_fame();
+                self.save();
+                return;
+            }
         }
         self.ratagotchi.fitness_decay(catchup_end);
         info!(
@@ -721,7 +743,9 @@ impl Game {
     }
 
     fn is_over(&self) -> Option<GameOver> {
-        if self.ratagotchi.age >= RATAGOTCHI_RETIREMENT_AGE {
+        if self.ratagotchi.health <= RATAGOTCHI_STAT_MIN_VALUE {
+            Some(GameOver::Dead)
+        } else if self.ratagotchi.age >= RATAGOTCHI_RETIREMENT_AGE {
             Some(GameOver::Retired)
         } else {
             None
