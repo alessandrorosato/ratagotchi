@@ -1181,17 +1181,6 @@ fn render_game_over(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer, game_
     let block = Block::new();
     let [left_column, right_column] = block.inner(area).layout(&columns_layout);
 
-    let left_column_layout = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(15),
-        Constraint::Length(4),
-        Constraint::Length(4),
-        Constraint::Fill(2),
-    ]);
-
-    let [_, portrait, game_over_text, age_text, _] =
-        Block::new().inner(left_column).layout(&left_column_layout);
-
     let (head_image, label_line, sublabel_line) = match game_over {
         GameOver::Retired => (
             "assets/ratagotchi/head.png".to_string(),
@@ -1208,30 +1197,37 @@ fn render_game_over(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer, game_
         ),
     };
 
+    let text_height = if sublabel_line.is_some() { 6 } else { 3 };
+
+    let left_column_layout = Layout::vertical([
+        Constraint::Length(5),
+        Constraint::Length(15),
+        Constraint::Length(text_height),
+        Constraint::Length(4),
+        Constraint::Fill(2),
+    ]);
+
+    let [_, portrait, game_over_text, age_text, _] =
+        Block::new().inner(left_column).layout(&left_column_layout);
+
     self::render_image_as_paragraph(head_image, portrait, VerticalPosition::Center, None)
         .centered()
         .render(portrait, buf);
 
-    BigText::builder()
-        .pixel_size(PixelSize::Quadrant)
-        .centered()
-        .lines([label_line])
-        .build()
-        .render(game_over_text, buf);
-
-    if let Some(death_cause) = sublabel_line {
-        BigText::builder()
-            .pixel_size(PixelSize::Quadrant)
-            .centered()
-            .lines([death_cause])
-            .build()
-            .render(game_over_text, buf);
-    }
-
+    let mut lines = vec![label_line];
+    lines.extend(sublabel_line);
     BigText::builder()
         .pixel_size(PixelSize::Sextant)
         .centered()
-        .lines([ratagotchi.print_age().into()])
+        .lines(lines)
+        .build()
+        .render(game_over_text, buf);
+
+    let age_string = format!("Age: {}", ratagotchi.print_age());
+    BigText::builder()
+        .pixel_size(PixelSize::Sextant)
+        .centered()
+        .lines([Line::from(age_string)])
         .build()
         .render(age_text, buf);
 
@@ -1261,7 +1257,10 @@ fn render_game_over(ratagotchi: &Ratagotchi, area: Rect, buf: &mut Buffer, game_
             Line::from("Weight at birth"),
             format!("{:.1} g", ratagotchi.birth_weight).into(),
             Line::from(""),
-            Line::from("Retirement weight"),
+            Line::from(match game_over {
+                GameOver::Retired => "Retirement weight",
+                GameOver::Dead(_) => "Final weight",
+            }),
             ratagotchi.print_weight().into(),
             ratagotchi.print_fitness().into(),
         ])
@@ -1313,6 +1312,6 @@ fn render_hall_of_fame(game: &Game, area: Rect, buf: &mut Buffer) {
     if let Some(selected) = hall_of_fame.get(game.hall_of_fame_index)
         && let Some(game_over) = &selected.is_over
     {
-        render_game_over(selected, right_column, buf, &game_over);
+        render_game_over(selected, right_column, buf, game_over);
     }
 }
