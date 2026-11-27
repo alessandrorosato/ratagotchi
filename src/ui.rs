@@ -379,7 +379,7 @@ fn render_view(game: &Game, area: Rect, buf: &mut Buffer) {
         GameView::Attention => render_attention(game, main, buf),
         GameView::GameOver => {
             if let Some(game_over) = &game.ratagotchi.is_over {
-                render_game_over(&game.ratagotchi, area, buf, game_over);
+                render_game_over(&game.ratagotchi, main, buf, game_over);
             }
         }
     }
